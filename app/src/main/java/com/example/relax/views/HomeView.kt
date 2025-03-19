@@ -1,33 +1,41 @@
 package com.example.relax.views
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.relax.R
+import com.example.relax.viewmodels.HomeViewModel
 
 class HomeView {
-    // Properties
-    private val appName: String = "RelaX"
-
-    // Methods
     @Preview(showBackground = true)
     @Composable
-    fun StartScreen(){
-        var startingLocation by remember { mutableStateOf("")}
-        var destination by remember { mutableStateOf("")}
+    fun StartScreen(viewModel: HomeViewModel = viewModel()){
+        val startingLocation by viewModel.startingLocation.collectAsState()
+        val destination by viewModel.destination.collectAsState()
+        val appName by remember { mutableStateOf("Relax") }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -35,8 +43,21 @@ class HomeView {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(bottom = 100.dp)
             ){
-                RenderAppName()
+                RenderAppName(appName)
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ){
+                Text(
+                    text = "From",
+                    fontSize = 24.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(x = 50.dp)
+                )
             }
             Row(
                 modifier = Modifier
@@ -45,18 +66,61 @@ class HomeView {
                 OutlinedTextField(
                     value = startingLocation,
                     onValueChange = { text ->
-                        startingLocation = text
+                        viewModel.updateStartingLocation(text)
                     },
                     modifier = Modifier
-                        .weight(1f)
+                        .padding(16.dp)
+                        .size(width = 160.dp, height = 50.dp)
                     )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ){
+                Image(
+                    painter = painterResource(id = R.drawable.upanddownarrows),
+                    contentDescription = "Up and down arrows image",
+                    modifier = Modifier
+                        .size(160.dp)
+                        .padding(16.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ){
+                Text(
+                    text = "To",
+                    fontSize = 24.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(x = 250.dp)
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ){
+                OutlinedTextField(
+                    value = destination,
+                    onValueChange = { text ->
+                        viewModel.updateDestination(text)
+                    },
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .size(width = 160.dp, height = 50.dp)
+                        .offset(x = 180.dp)
+                )
             }
         }
     }
+
     @Composable
-    fun RenderAppName(){
+    fun RenderAppName(text: String){
         Text(
-            text = this.appName,
+            text = text,
             fontSize = 30.sp,
             fontFamily = FontFamily.SansSerif,
             color = Color.Black,
