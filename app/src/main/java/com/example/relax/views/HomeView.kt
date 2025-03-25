@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,17 +26,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.relax.R
+import com.example.relax.viewmodels.HolidayViewModel
 import com.example.relax.viewmodels.HomeViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
 
 class HomeView {
     @Preview(showBackground = true)
     @Composable
-    fun StartScreen(viewModel: HomeViewModel = viewModel()){
+    fun StartScreen(viewModel: HomeViewModel = viewModel(), viewModel2: HolidayViewModel = hiltViewModel()){
         val startingLocation by viewModel.startingLocation.collectAsState()
         val destination by viewModel.destination.collectAsState()
         val appName by remember { mutableStateOf("Relax") }
+        viewModel2.getPokemon()
+        //val pokemons by viewModel2.pokemons.collectAsState( )
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -114,6 +120,15 @@ class HomeView {
                         .offset(x = 180.dp)
                 )
             }
+            /*
+            Row(
+                modifier = Modifier.padding(16.dp)
+            ){
+                Button(onClick = {viewModel2.getPokemon()}) {
+                    Text("Fetch Data")
+                }
+                pokemons.forEach { item -> Text(text = item) }
+            }*/
         }
     }
 
