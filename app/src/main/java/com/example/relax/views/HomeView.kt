@@ -40,8 +40,7 @@ class HomeView {
         val startingLocation by viewModel.startingLocation.collectAsState()
         val destination by viewModel.destination.collectAsState()
         val appName by remember { mutableStateOf("Relax") }
-        viewModel2.getPokemon()
-        //val pokemons by viewModel2.pokemons.collectAsState( )
+        val pokemon by viewModel2.pokemon.collectAsState()
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -120,15 +119,24 @@ class HomeView {
                         .offset(x = 180.dp)
                 )
             }
-            /*
+
             Row(
                 modifier = Modifier.padding(16.dp)
             ){
                 Button(onClick = {viewModel2.getPokemon()}) {
                     Text("Fetch Data")
                 }
-                pokemons.forEach { item -> Text(text = item) }
-            }*/
+            }
+            Row(
+                modifier = Modifier.padding(16.dp)
+            ){
+                pokemon?.let { data ->
+                    Column {
+                        Text(text = "Name: ${data.name}")
+                        Text(text = "ID: ${data.id}")
+                    }
+                } ?: Text("No Data Yet")
+            }
         }
     }
 
