@@ -13,6 +13,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,7 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.relax.R
 import com.example.relax.viewmodels.HolidayViewModel
 import com.example.relax.viewmodels.HomeViewModel
-import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 
 class HomeView {
     @Preview(showBackground = true)
@@ -40,7 +41,24 @@ class HomeView {
         val startingLocation by viewModel.startingLocation.collectAsState()
         val destination by viewModel.destination.collectAsState()
         val appName by remember { mutableStateOf("Relax") }
-        val pokemon by viewModel2.pokemon.collectAsState()
+        val startingLocationInfo by viewModel2.startingLocation.collectAsState()
+        val destinationInfo by viewModel2.destination.collectAsState()
+
+        // Effects to prevent often API calls
+        LaunchedEffect(startingLocation) {
+            delay(2000)
+            if(startingLocation.isNotEmpty()){
+                viewModel2.getDestination(startingLocation, "start")
+            }
+        }
+        LaunchedEffect(destination) {
+            delay(2000)
+            if(destination.isNotEmpty()){
+                viewModel2.getDestination(destination, "")
+            }
+        }
+
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -123,19 +141,7 @@ class HomeView {
             Row(
                 modifier = Modifier.padding(16.dp)
             ){
-                Button(onClick = {viewModel2.getPokemon()}) {
-                    Text("Fetch Data")
-                }
-            }
-            Row(
-                modifier = Modifier.padding(16.dp)
-            ){
-                pokemon?.let { data ->
-                    Column {
-                        Text(text = "Name: ${data.name}")
-                        Text(text = "ID: ${data.id}")
-                    }
-                } ?: Text("No Data Yet")
+
             }
         }
     }

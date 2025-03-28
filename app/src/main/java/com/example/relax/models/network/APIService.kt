@@ -1,9 +1,10 @@
 package com.example.relax.models.network
 
-import com.example.relax.models.PokemonResponse
+import com.example.relax.models.Flights
 import retrofit2.http.GET
+import retrofit2.http.Query
 
-public interface APIService {
-    @GET("pokemon/ditto")
-    suspend fun getPokemon(): PokemonResponse
+interface APIService {
+    @GET("flights/searchDestination")
+    suspend fun getDestination(@Query("query") query: String): Flights
 }
