@@ -1,4 +1,4 @@
-package com.example.relax.models
+package com.example.relax.models.endpoints.searchFlightLocation
 
 data class DistanceToCity (
     val value: Float,

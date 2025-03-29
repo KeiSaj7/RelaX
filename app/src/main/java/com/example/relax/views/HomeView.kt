@@ -18,6 +18,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -28,134 +29,152 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.relax.R
-import com.example.relax.viewmodels.HolidayViewModel
 import com.example.relax.viewmodels.HomeViewModel
 import kotlinx.coroutines.delay
 
-class HomeView {
-    @Preview(showBackground = true)
-    @Composable
-    fun StartScreen(viewModel: HomeViewModel = viewModel(), viewModel2: HolidayViewModel = hiltViewModel()){
-        val startingLocation by viewModel.startingLocation.collectAsState()
-        val destination by viewModel.destination.collectAsState()
-        val appName by remember { mutableStateOf("Relax") }
-        val startingLocationInfo by viewModel2.startingLocation.collectAsState()
-        val destinationInfo by viewModel2.destination.collectAsState()
+@Preview(showBackground = true)
+@Composable
+fun StartScreen(navController: NavController , homeViewModel : HomeViewModel = hiltViewModel()){
+    var startingLocation by remember { mutableStateOf("") }
+    var destination by remember { mutableStateOf("") }
+    val appName by remember { mutableStateOf("Relax") }
+    val startingLocationResponse by homeViewModel.startingLocation.collectAsState()
+    val destinationResponse by homeViewModel.destination.collectAsState()
 
-        // Effects to prevent often API calls
-        LaunchedEffect(startingLocation) {
-            delay(2000)
-            if(startingLocation.isNotEmpty()){
-                viewModel2.getDestination(startingLocation, "start")
-            }
+    // Effects to prevent often API calls
+    LaunchedEffect(startingLocation) {
+        delay(2000)
+        if(startingLocation.isNotEmpty()){
+            homeViewModel.getDestination(startingLocation, "start")
         }
-        LaunchedEffect(destination) {
-            delay(2000)
-            if(destination.isNotEmpty()){
-                viewModel2.getDestination(destination, "")
-            }
+    }
+    LaunchedEffect(destination) {
+        delay(2000)
+        if(destination.isNotEmpty()){
+            homeViewModel.getDestination(destination, "")
         }
+    }
 
-
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+    ){
+        Row(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .padding(bottom = 100.dp)
         ){
-            Row(
+            RenderAppName(appName)
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+        ){
+            Text(
+                text = "From",
+                fontSize = 24.sp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 100.dp)
-            ){
-                RenderAppName(appName)
-            }
-            Row(
+                    .offset(x = 50.dp)
+            )
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+        ){
+            OutlinedTextField(
+                value = startingLocation,
+                onValueChange = { text ->
+                    startingLocation = text
+                },
                 modifier = Modifier
-                    .fillMaxWidth()
-            ){
-                Text(
-                    text = "From",
-                    fontSize = 24.sp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .offset(x = 50.dp)
+                    .padding(16.dp)
+                    .size(width = 160.dp, height = 50.dp)
                 )
-            }
-            Row(
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ){
+            Image(
+                painter = painterResource(id = R.drawable.upanddownarrows),
+                contentDescription = "Up and down arrows image",
+                modifier = Modifier
+                    .size(160.dp)
+                    .padding(16.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+        ){
+            Text(
+                text = "To",
+                fontSize = 24.sp,
                 modifier = Modifier
                     .fillMaxWidth()
-            ){
-                OutlinedTextField(
-                    value = startingLocation,
-                    onValueChange = { text ->
-                        viewModel.updateStartingLocation(text)
-                    },
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .size(width = 160.dp, height = 50.dp)
-                    )
-            }
-            Row(
+                    .offset(x = 250.dp)
+            )
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+        ){
+            OutlinedTextField(
+                value = destination,
+                onValueChange = { text ->
+                    destination = text
+                },
                 modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ){
-                Image(
-                    painter = painterResource(id = R.drawable.upanddownarrows),
-                    contentDescription = "Up and down arrows image",
-                    modifier = Modifier
-                        .size(160.dp)
-                        .padding(16.dp),
-                    contentScale = ContentScale.Fit
-                )
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-            ){
-                Text(
-                    text = "To",
-                    fontSize = 24.sp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .offset(x = 250.dp)
-                )
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-            ){
-                OutlinedTextField(
-                    value = destination,
-                    onValueChange = { text ->
-                        viewModel.updateDestination(text)
-                    },
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .size(width = 160.dp, height = 50.dp)
-                        .offset(x = 180.dp)
-                )
-            }
+                    .padding(16.dp)
+                    .size(width = 160.dp, height = 50.dp)
+                    .offset(x = 180.dp)
+            )
+        }
 
-            Row(
-                modifier = Modifier.padding(16.dp)
-            ){
+        Row(
+            modifier = Modifier.padding(16.dp)
+        ){
+            val selectedStartId: String? = startingLocationResponse?.firstOrNull()?.id
+            val selectedDestId: String? = destinationResponse?.firstOrNull()?.id
 
+            Button(
+                onClick = {
+                    // Check if selected IDs are available before calling
+                    if (selectedStartId != null && selectedDestId != null) {
+                        homeViewModel.getFlights(
+                            fromId = selectedStartId,
+                            toId = selectedDestId,
+                            departDate = "2025-05-01" // TODO: Get this from a Date Picker state
+                        )
+                        // Navigate after triggering the fetch
+                        navController.navigate("results_screen")
+                    } else {
+                        // TODO: Show error message to user (e.g., via Snackbar)
+                        // that locations must be selected
+                    }
+                },
+                // Disable button if selected locations aren't ready
+                enabled = (selectedStartId != null && selectedDestId != null) // Add date validation too
+            ) {
+                Text("Search")
             }
         }
     }
+}
 
-    @Composable
-    fun RenderAppName(text: String){
-        Text(
-            text = text,
-            fontSize = 30.sp,
-            fontFamily = FontFamily.SansSerif,
-            color = Color.Black,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-
+@Composable
+fun RenderAppName(text: String){
+    Text(
+        text = text,
+        fontSize = 30.sp,
+        fontFamily = FontFamily.SansSerif,
+        color = Color.Black,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth()
+    )
 }
