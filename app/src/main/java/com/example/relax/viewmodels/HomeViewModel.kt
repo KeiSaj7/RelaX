@@ -1,16 +1,15 @@
 package com.example.relax.viewmodels
 
 import android.util.Log
-import androidx.compose.runtime.State
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.relax.models.endpoints.searchFlightLocation.Flight
-import com.example.relax.models.endpoints.searchFlightLocation.Flights
 import com.example.relax.models.endpoints.searchFlights.FlightSearchResponse
 import com.example.relax.models.network.APIRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -20,23 +19,41 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel(){
 
     private val _startingLocation = MutableStateFlow<List<Flight>?>(null)
-    val startingLocation: StateFlow<List<Flight>?> = _startingLocation
-    private val _destination = MutableStateFlow<List<Flight>?>(null)
-    val destination: StateFlow<List<Flight>?> = _destination
-    private val _flights = MutableStateFlow<FlightSearchResponse?>(null)
-    val flights: StateFlow<FlightSearchResponse?> = _flights
+    val startingLocation: StateFlow<List<Flight>?> = _startingLocation.asStateFlow()
 
+    private val _destination = MutableStateFlow<List<Flight>?>(null)
+    val destination: StateFlow<List<Flight>?> = _destination.asStateFlow()
+
+    private val _flights = MutableStateFlow<FlightSearchResponse?>(null)
+    val flights: StateFlow<FlightSearchResponse?> = _flights.asStateFlow()
+
+    private val _isSearchingFlights = MutableStateFlow(false)
+    val isSearchingFlights: StateFlow<Boolean> = _isSearchingFlights.asStateFlow()
+
+    fun clearLocationSuggestions(point: String) {
+        if (point == "start") {
+            _startingLocation.value = null
+        } else {
+            _destination.value = null
+        }
+    }
 
     fun getDestination(query: String, point: String){
+        if (query.length < 2) {
+            // Clear suggestions if query is too short
+            clearLocationSuggestions(point)
+            return
+        }
         viewModelScope.launch {
             try{
                 val result = repository.getDestination(query)
                 Log.d("API_RESPONSE", "Success: $result")
                 if(point == "start"){
                     _startingLocation.value = result.data
-                    return@launch
                 }
-                _destination.value = result.data
+                else{
+                    _destination.value = result.data
+                }
             } catch (e: Exception){
                 Log.e("API_ERROR", "Error: ${e.message}")
                 e.printStackTrace()
@@ -55,6 +72,8 @@ class HomeViewModel @Inject constructor(
     ){
         viewModelScope.launch {
             try{
+                _isSearchingFlights.value = true
+                _flights.value = null
                 val result = repository.getFlights(
                     fromId = fromId,
                     toId = toId,
@@ -69,6 +88,9 @@ class HomeViewModel @Inject constructor(
             } catch (e: Exception){
                 Log.e("API_ERROR", "Error: ${e.message}")
                 e.printStackTrace()
+            }
+            finally {
+            _isSearchingFlights.value = false
             }
         }
     }

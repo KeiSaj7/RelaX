@@ -7,7 +7,10 @@ import retrofit2.http.Query
 
 interface APIService {
     @GET("flights/searchDestination")
-    suspend fun getDestination(@Query("query") query: String): Flights
+    suspend fun getDestination(
+        @Query("query") query: String,
+        @Query("languagecode") languagecode: String = "pl"
+    ): Flights
 
     @GET("flights/searchFlights")
     suspend fun getFlights(

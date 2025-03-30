@@ -12,7 +12,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.relax.ui.theme.RelaXTheme
 import com.example.relax.viewmodels.HomeViewModel
 import com.example.relax.views.StartScreen
-import com.example.relax.views.FlightResultsScreen
+import com.example.relax.views.ResultView
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -23,20 +23,18 @@ class MainActivity : ComponentActivity() {
         setContent {
             RelaXTheme {
                 val navController = rememberNavController()
-
+                val homeViewModel: HomeViewModel = hiltViewModel()
                 NavHost(navController = navController, startDestination = "home_view") {
 
                     composable("home_view") {
-                        val homeViewModel: HomeViewModel = hiltViewModel()
                         StartScreen(
-                            navController = navController
+                            navController = navController,
+                            homeViewModel = homeViewModel
                         )
                     }
                     composable("results_screen") {
-                        val homeViewModel: HomeViewModel = hiltViewModel()
-
-                        FlightResultsScreen(
-                            navController = navController
+                        ResultView(
+                            homeViewModel = homeViewModel
                         )
                     }
                 }
