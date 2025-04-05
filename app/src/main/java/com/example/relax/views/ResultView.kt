@@ -1,35 +1,29 @@
-// ResultView.kt
-package com.example.relax.views // Or your correct package
+package com.example.relax.views
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-//import androidx.compose.material.icons.filled.ErrorOutline
-//import androidx.compose.material.icons.filled.FlightLand
-//import androidx.compose.material.icons.filled.FlightTakeoff
-import androidx.compose.material3.* // Make sure you have Material 3 imports
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.FlightLand
+import androidx.compose.material.icons.filled.FlightTakeoff
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.relax.models.endpoints.searchFlights.* // Import your models
-import com.example.relax.ui.theme.RelaXTheme // Import your theme
+import com.example.relax.models.endpoints.searchFlights.*
 import com.example.relax.viewmodels.HomeViewModel
-import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 import java.time.format.FormatStyle
 import java.util.Locale
-import kotlinx.coroutines.flow.MutableStateFlow
 
 // --- Main Result View Composable ---
 
@@ -109,13 +103,12 @@ fun ErrorView(message: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        /*
         Icon(
             imageVector = Icons.Filled.ErrorOutline,
             contentDescription = "Error",
             tint = MaterialTheme.colorScheme.error,
             modifier = Modifier.size(64.dp)
-        )*/
+        )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "Search Error", // Changed title slightly
@@ -161,7 +154,7 @@ fun FlightOffersList(
         verticalArrangement = Arrangement.spacedBy(12.dp) // Spacing between cards
     ) {
         // Optional: Add a header if needed
-        // item { Text("Available Flights", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp)) }
+        item { Text("Available Flights", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp)) }
 
         items(items = flightOffers, key = { offer -> offer.hashCode() }) { offer -> // Use a stable key if possible
             FlightOfferCard(
@@ -202,31 +195,6 @@ fun FlightOfferCard(
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                // Stops / Trip Type Information
-                Column(horizontalAlignment = Alignment.End) {
-                    val stops = (offer.segments?.size ?: 1) - 1
-                    Text(
-                        text = when (stops) {
-                            0 -> "Direct"
-                            1 -> "1 Stop"
-                            else -> "$stops Stops"
-                        },
-                        style = MaterialTheme.typography.bodyMedium, // Slightly larger than label
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    // Optionally display trip type if relevant (e.g., ONEWAY vs ROUNDTRIP)
-                    offer.tripType?.let { type ->
-                        if (type.equals("ONEWAY", ignoreCase = true)){
-                            Text(
-                                text = "One Way", // User friendly text
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.outline
-                            )
-                        }
-                        // Add else for ROUNDTRIP if needed
-                    }
-                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -245,8 +213,6 @@ fun FlightOfferCard(
                         textAlign = TextAlign.Center,
                         letterSpacing = 2.sp // Creates dashed effect
                     )
-                    // Alternative: Use a proper Divider
-                    // Divider(modifier = Modifier.padding(vertical = 8.dp), thickness = 1.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                 }
             }
         }
@@ -264,13 +230,13 @@ fun SegmentView(segment: Segment) {
         // Departure Info
         Column(modifier = Modifier.weight(1f)) { // Takes up available space
             Row(verticalAlignment = Alignment.CenterVertically) {
-                /*
+
                 Icon(
                     imageVector = Icons.Filled.FlightTakeoff,
                     contentDescription = "Departure",
                     modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.primary
-                )*/
+                )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = segment.departureAirport?.code ?: "???",
@@ -279,21 +245,40 @@ fun SegmentView(segment: Segment) {
                 )
             }
             Text(
-                text = formatDisplayDateTime(segment.departureTime),
+                text = segment.departureTime!!,//formatDisplayDateTime(segment.departureTime),
                 style = MaterialTheme.typography.bodySmall, // Smaller font for time
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 20.dp) // Indent time under icon
             )
         }
 
-        // Arrow Separator
-        /*
-        Icon(
-            imageVector = Icons.Filled.ArrowForward, // Using default material icon
-            contentDescription = "to",
-            modifier = Modifier.padding(horizontal = 8.dp).size(18.dp),
-            tint = MaterialTheme.colorScheme.outline
-        )*/
+        // --- Middle Section: Stops and Arrow ---
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 4.dp) // Add some horizontal padding
+        ) {
+            // Calculate stops for THIS segment based on its legs
+            val stopsCount = (segment.legs?.size ?: 1) - 1 // 0 stops = 1 leg, 1 stop = 2 legs, etc.
+            val stopsText = when {
+                stopsCount <= 0 -> "Direct"
+                stopsCount == 1 -> "1 Stop"
+                else -> "$stopsCount Stops"
+            }
+
+            Text(
+                text = stopsText,
+                style = MaterialTheme.typography.labelMedium, // Use a smaller label style
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 2.dp) // Add space below stops text
+            )
+
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = "to",
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.outline
+            )
+        }
 
         // Arrival Info
         Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) { // Align text to the end
@@ -305,16 +290,16 @@ fun SegmentView(segment: Segment) {
                     textAlign = TextAlign.End
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                /*
+
                 Icon(
                     imageVector = Icons.Filled.FlightLand,
                     contentDescription = "Arrival",
                     modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.primary
-                )*/
+                )
             }
             Text(
-                text = formatDisplayDateTime(segment.arrivalTime),
+                text = segment.arrivalTime!!,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(end = 20.dp), // Indent time under icon (from right)
@@ -358,30 +343,3 @@ private val displayDateTimeFormatter = DateTimeFormatter.ofLocalizedDateTime(For
 // Let's try ISO_OFFSET_DATE_TIME first, but add a fallback for LOCAL_DATE_TIME.
 private val isoOffsetDateTimeParser = DateTimeFormatter.ISO_OFFSET_DATE_TIME
 // private val isoLocalDateTimeParser = DateTimeFormatter.ISO_LOCAL_DATE_TIME // Fallback if no offset
-
-fun formatDisplayDateTime(dateTimeString: String?): String {
-    if (dateTimeString.isNullOrBlank()) return "N/A"
-    return try {
-        // Try parsing with offset first
-        val offsetDateTime = OffsetDateTime.parse(dateTimeString, isoOffsetDateTimeParser)
-        offsetDateTime.format(displayDateTimeFormatter)
-    } catch (e: DateTimeParseException) {
-        // Log the parsing error (optional but recommended)
-        // Log.w("ResultView", "Could not parse as OffsetDateTime: $dateTimeString, trying Local. Error: ${e.message}")
-        // If OffsetDateTime fails, try parsing as LocalDateTime (assumes local time or needs timezone logic)
-        // This is less ideal as timezone is ambiguous without offset.
-        /* try {
-             val localDateTime = LocalDateTime.parse(dateTimeString, isoLocalDateTimeParser)
-             localDateTime.format(displayDateTimeFormatter)
-         } catch (e2: DateTimeParseException) {
-             Log.e("ResultView", "Failed to parse date/time string: $dateTimeString", e2)
-             "Invalid Date" // Final fallback
-         } */
-        // For now, if offset parsing fails, show error. Revisit if API truly lacks offsets.
-        "Invalid Date Format"
-    } catch (e: Exception) {
-        // Catch other potential errors during formatting
-        // Log.e("ResultView", "Error formatting date/time: $dateTimeString", e)
-        "Error"
-    }
-}

@@ -24,6 +24,9 @@ import com.example.relax.viewmodels.HomeViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class) // Needed for DropdownMenu, Scaffold, etc.
 @Composable
@@ -31,7 +34,6 @@ fun StartScreen(
     navController: NavController,
     homeViewModel: HomeViewModel
 ) {
-
     val appName by remember { mutableStateOf("Relax") }
 
     // State for the text currently typed in the fields
@@ -77,6 +79,27 @@ fun StartScreen(
             if (point == "start") isStartDropdownVisible = true else isDestDropdownVisible = true
         }
     }
+
+    // Date Picker
+    var selectedDepartureDateMillis by remember { mutableStateOf<Long?>(null) }
+    val formattedSelectedDepartureDate = remember(selectedDepartureDateMillis){
+        selectedDepartureDateMillis?.let { millis ->
+            val calendar = Calendar.getInstance().apply { timeInMillis = millis}
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            dateFormat.format(calendar.time)
+        } ?: ""
+    }
+    var selectedReturnDateMillis by remember { mutableStateOf<Long?>(null) }
+    val formattedSelectedReturnDate = remember(selectedReturnDateMillis){
+        selectedReturnDateMillis?.let { millis ->
+            val calendar = Calendar.getInstance().apply { timeInMillis = millis}
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            dateFormat.format(calendar.time)
+        } ?: ""
+    }
+    var showDepartureCalendar by remember { mutableStateOf(false) }
+    var showReturnCalendar by remember { mutableStateOf(false) }
+
 
     // --- UI ---
     Scaffold(
@@ -180,30 +203,36 @@ fun StartScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp) // Spacing between date fields
                 ){
                     // You'll need state for the selected dates
-                    val departDateString = "2025-05-01" // Placeholder state
-                    val returnDateString = "" // Placeholder state
-
-                    OutlinedTextField(
-                        value = departDateString.ifBlank { "Select Date" },
-                        onValueChange = {}, // Not editable directly
-                        readOnly = true, // User clicks to open picker
-                        label = { Text("Departure") },
-                        leadingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Departure Date")},
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { /* TODO: Open Departure Date Picker Dialog */ }
-                    )
-
-                    OutlinedTextField(
-                        value = returnDateString.ifBlank { "One Way" },
-                        onValueChange = {}, // Not editable directly
-                        readOnly = true, // User clicks to open picker
-                        label = { Text("Return") },
-                        leadingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Return Date")},
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { /* TODO: Open Return Date Picker Dialog */ }
-                    )
+                    Box(modifier = Modifier
+                        .weight(1f)
+                        .clickable{
+                            showDepartureCalendar = true
+                        }
+                    ){
+                        OutlinedTextField(
+                            value = formattedSelectedDepartureDate.ifBlank { "Select Date" },
+                            onValueChange = {}, // Not editable directly
+                            readOnly = true, // User clicks to open picker
+                            label = { Text("Departure") },
+                            leadingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Departure Date")},
+                            enabled = false,
+                        )
+                    }
+                    Box(modifier = Modifier
+                        .weight(1f)
+                        .clickable{
+                            showReturnCalendar = true
+                        }
+                    ){
+                        OutlinedTextField(
+                            value = formattedSelectedReturnDate.ifBlank { "One way" },
+                            onValueChange = {}, // Not editable directly
+                            readOnly = true, // User clicks to open picker
+                            label = { Text("Return") },
+                            leadingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Return Date")},
+                            enabled = false
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(40.dp))
 
@@ -215,14 +244,16 @@ fun StartScreen(
                         focusManager.clearFocus()
                         val startId = selectedStartFlight?.id // Use ID from selected Flight
                         val destId = selectedDestinationFlight?.id // Use ID from selected Flight
-                        val departDate = "2025-05-01" // TODO: Get ACTUAL from Date Picker state
+                        val departDate = formattedSelectedDepartureDate
+                        val returnDate = formattedSelectedReturnDate
 
                         if (startId != null && destId != null && departDate.isNotBlank()) {
                             // Call ViewModel to fetch flights
                             homeViewModel.getFlights(
                                 fromId = startId,
                                 toId = destId,
-                                departDate = departDate
+                                departDate = departDate,
+                                returnDate = returnDate
                                 // Pass other params like returnDate, adults if needed
                             )
                             // Navigate to results screen (assuming non-suspend getFlights)
@@ -261,6 +292,28 @@ fun StartScreen(
                 ) {} // Semi-transparent background
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center) // Centered spinner
+                )
+            }
+            if(showDepartureCalendar){
+                DatePickerModal(
+                    onDateSelected = { millis ->
+                        selectedDepartureDateMillis = millis // Update the state with the selected date
+                        showDepartureCalendar = false // Close dialog after selection
+                    },
+                    onDismiss = {
+                        showDepartureCalendar = false // Close dialog if dismissed
+                    }
+                )
+            }
+            if(showReturnCalendar){
+                DatePickerModal(
+                    onDateSelected = { millis ->
+                        selectedReturnDateMillis = millis // Update the state with the selected date
+                        showReturnCalendar = false // Close dialog after selection
+                    },
+                    onDismiss = {
+                        showReturnCalendar = false // Close dialog if dismissed
+                    }
                 )
             }
         } // End Box
@@ -393,6 +446,38 @@ fun LocationInputWithDropdown(
                 )
             }
         }
+    }
+}
+
+@ExperimentalMaterial3Api
+@Composable
+fun DatePickerModal(
+    onDateSelected: (Long?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = Calendar.getInstance().timeInMillis
+    )
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onDateSelected(datePickerState.selectedDateMillis)
+                },
+                enabled = datePickerState.selectedDateMillis != null
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    ) {
+        DatePicker(state = datePickerState)
     }
 }
 

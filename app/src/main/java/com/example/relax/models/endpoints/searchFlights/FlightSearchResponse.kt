@@ -24,7 +24,16 @@ data class Segment(
     @SerializedName("departureAirport") val departureAirport: MinimalAirportInfo?,
     @SerializedName("arrivalAirport") val arrivalAirport: MinimalAirportInfo?,
     @SerializedName("departureTime") val departureTime: String?,
-    @SerializedName("arrivalTime") val arrivalTime: String?
+    @SerializedName("arrivalTime") val arrivalTime: String?,
+    @SerializedName("legs") val legs: List<Leg>?
+)
+
+data class Leg(
+    @SerializedName("arrivalAirport") val legArrivalAirport: LegArrivalAirport?
+)
+
+data class LegArrivalAirport(
+    @SerializedName("code") val code: String?
 )
 
 data class MinimalAirportInfo(
