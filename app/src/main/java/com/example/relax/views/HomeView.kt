@@ -1,5 +1,7 @@
 package com.example.relax.views
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -7,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -99,6 +102,9 @@ fun StartScreen(
     }
     var showDepartureCalendar by remember { mutableStateOf(false) }
     var showReturnCalendar by remember { mutableStateOf(false) }
+
+    // Adults
+    var adults by remember {mutableIntStateOf(1)}
 
 
     // --- UI ---
@@ -196,7 +202,6 @@ fun StartScreen(
                 )
                 Spacer(modifier = Modifier.height(40.dp))
 
-                // --- Date Pickers (Placeholder - Replace with actual implementation) ---
                 Text("Dates", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 4.dp))
                 Row(
                     Modifier.fillMaxWidth(),
@@ -216,6 +221,15 @@ fun StartScreen(
                             label = { Text("Departure") },
                             leadingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Departure Date")},
                             enabled = false,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                disabledTextColor = LocalContentColor.current.copy(),
+                                disabledContainerColor = Color.Transparent, // Or MaterialTheme.colorScheme.surface
+                                disabledBorderColor = MaterialTheme.colorScheme.outline, // Standard border
+                                disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         )
                     }
                     Box(modifier = Modifier
@@ -230,12 +244,27 @@ fun StartScreen(
                             readOnly = true, // User clicks to open picker
                             label = { Text("Return") },
                             leadingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Return Date")},
-                            enabled = false
+                            enabled = false,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                disabledTextColor = LocalContentColor.current.copy(),
+                                disabledContainerColor = Color.Transparent, // Or MaterialTheme.colorScheme.surface
+                                disabledBorderColor = MaterialTheme.colorScheme.outline, // Standard border
+                                disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         )
                     }
                 }
                 Spacer(modifier = Modifier.height(40.dp))
 
+                Row(
+                    Modifier.fillMaxWidth(),
+                ){
+                    NumberPicker(count = adults, onCountChange = {newCount -> adults = newCount} )
+                }
+                Spacer(modifier = Modifier.height(40.dp))
 
                 // --- Search Button ---
                 Button(
@@ -253,7 +282,8 @@ fun StartScreen(
                                 fromId = startId,
                                 toId = destId,
                                 departDate = departDate,
-                                returnDate = returnDate
+                                returnDate = returnDate,
+                                adults = adults
                                 // Pass other params like returnDate, adults if needed
                             )
                             // Navigate to results screen (assuming non-suspend getFlights)
@@ -478,6 +508,89 @@ fun DatePickerModal(
         }
     ) {
         DatePicker(state = datePickerState)
+    }
+}
+
+@Composable
+fun NumberPicker(
+    label: String = "Adults",
+    count: Int,
+    onCountChange: (Int) -> Unit,
+    minValue: Int = 1,
+    maxValue: Int = 9
+) {
+    Column(modifier = Modifier) {
+
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+
+        // Row contained within a border for the frame effect
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min) // Ensures Row height fits content snugly
+                .border(
+                    BorderStroke(1.dp, MaterialTheme.colorScheme.outline), // Standard outline color
+                    shape = MaterialTheme.shapes.extraSmall // Match OutlinedTextField corner radius
+                )
+                .padding(horizontal = 4.dp), // Padding inside the border
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Decrease Button
+            IconButton(
+                onClick = { if (count > minValue) onCountChange(count - 1) },
+                enabled = count > minValue // Disable if at minimum value
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Remove,
+                    contentDescription = "Decrease $label", // Accessibility
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            // Divider for visual separation
+            HorizontalDivider(
+                modifier = Modifier
+                    .height(24.dp) // Adjust height as needed
+                    .width(1.dp)
+                    .padding(vertical = 8.dp), // Padding around divider
+                color = MaterialTheme.colorScheme.outline
+            )
+
+            // Count Display - Takes up the central space
+            Text(
+                text = count.toString(),
+                style = MaterialTheme.typography.bodyLarge, // Make number prominent
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .weight(1f) // Fill available horizontal space
+                    .padding(vertical = 12.dp) // Vertical padding to ensure height matches IconButton touch area
+            )
+
+            // Divider for visual separation
+            HorizontalDivider(
+                modifier = Modifier
+                    .height(24.dp) // Adjust height as needed
+                    .width(1.dp)
+                    .padding(vertical = 8.dp), // Padding around divider
+                color = MaterialTheme.colorScheme.outline
+            )
+
+            // Increase Button
+            IconButton(
+                onClick = { if (count < maxValue) onCountChange(count + 1) },
+                enabled = count < maxValue // Disable if at maximum value
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Increase $label", // Accessibility
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
     }
 }
 
