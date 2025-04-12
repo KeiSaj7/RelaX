@@ -1,5 +1,6 @@
 package com.example.relax.views
 
+import com.example.relax.models.navigationRoutes.FlightsRoute
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,7 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.relax.models.endpoints.searchFlightLocation.Flight
+import com.example.relax.models.endpoints.Flight
 import com.example.relax.viewmodels.HomeViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -284,10 +285,17 @@ fun StartScreen(
                                 departDate = departDate,
                                 returnDate = returnDate,
                                 adults = adults
-                                // Pass other params like returnDate, adults if needed
                             )
                             // Navigate to results screen (assuming non-suspend getFlights)
-                            navController.navigate("results_screen")
+                            navController.navigate(
+                                FlightsRoute(
+                                    destinationName = selectedDestinationFlight?.name,
+                                    departDate = departDate,
+                                    returnDate = returnDate,
+                                    adults = adults,
+                                    null
+                                )
+                            )
                         } else {
                             // Show validation error message
                             coroutineScope.launch {

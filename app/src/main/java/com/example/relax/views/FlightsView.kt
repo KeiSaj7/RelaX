@@ -19,22 +19,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.relax.models.endpoints.searchFlights.*
-import com.example.relax.viewmodels.HomeViewModel
+import androidx.navigation.NavController
+import com.example.relax.models.endpoints.FlightOffer
+import com.example.relax.models.endpoints.PriceInfo
+import com.example.relax.models.endpoints.Segment
+import com.example.relax.viewmodels.FlightsViewModel
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
 
-// --- Main Result View Composable ---
 
 @Composable
 fun ResultView(
-    homeViewModel: HomeViewModel, // Accept the shared ViewModel instance
+    navController: NavController,
+    flightsViewModel: FlightsViewModel, // Accept the shared ViewModel instance
     // Callback for when a user selects a flight offer (to be handled by the caller, e.g., navigate)
     onFlightOfferClick: (FlightOffer) -> Unit = {} // Default empty lambda is fine for now
 ) {
     // Collect the state from the passed-in ViewModel
-    val responseState by homeViewModel.flights.collectAsState()
+    val responseState by flightsViewModel.flights.collectAsState()
 
     // Use a local variable for smart casting within the 'when' block
     val currentResponse = responseState
@@ -73,6 +76,8 @@ fun ResultView(
                 else -> {
                     // Pass the non-null list and the click handler to the list composable
                     FlightOffersList(
+                        navController = navController,
+                        flightViewModel = flightsViewModel,
                         flightOffers = currentResponse.data.flightOffers,
                         onFlightOfferClick = onFlightOfferClick
                     )
@@ -146,13 +151,19 @@ fun EmptyResultsView(message: String) {
 
 @Composable
 fun FlightOffersList(
+    navController: NavController,
+    flightViewModel: FlightsViewModel,
     flightOffers: List<FlightOffer>,
     onFlightOfferClick: (FlightOffer) -> Unit // Callback for item clicks
 ) {
+
     LazyColumn(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp) // Spacing between cards
     ) {
+        item { Button(onClick = {flightViewModel.navigateToHotels(navController)} ){
+            Text("Hotels")
+        }}
         // Optional: Add a header if needed
         item { Text("Available Flights", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp)) }
 

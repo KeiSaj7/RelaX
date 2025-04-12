@@ -43,7 +43,13 @@ class NetworkModule {
 
     @Provides
     @Singleton
-    fun provideAPIService(retrofit: Retrofit): APIService{
-        return retrofit.create(APIService::class.java)
+    fun provideFlightsService(retrofit: Retrofit): FlightsService{
+        return retrofit.create(FlightsService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideHotelsService(retrofit: Retrofit): HotelsService{
+        return retrofit.create(HotelsService::class.java)
     }
 }

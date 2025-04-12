@@ -1,11 +1,13 @@
 package com.example.relax.models.network
 
-import com.example.relax.models.endpoints.searchFlightLocation.Flights
-import com.example.relax.models.endpoints.searchFlights.FlightSearchResponse
+import com.example.relax.models.endpoints.Flights
+import com.example.relax.models.endpoints.FlightSearchResponse
+import com.example.relax.models.endpoints.HotelDestinationResponse
+import com.example.relax.models.endpoints.SearchHotelsResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
 
-interface APIService {
+interface FlightsService {
     @GET("flights/searchDestination")
     suspend fun getDestination(
         @Query("query") query: String,
@@ -24,4 +26,5 @@ interface APIService {
         @Query("sort") sort: String,
         @Query("cabinClass") cabinClass: String = "ECONOMY"
     ): FlightSearchResponse
+
 }

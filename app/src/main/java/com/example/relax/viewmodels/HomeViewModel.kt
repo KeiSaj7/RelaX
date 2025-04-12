@@ -3,9 +3,9 @@ package com.example.relax.viewmodels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.relax.models.endpoints.searchFlightLocation.Flight
-import com.example.relax.models.endpoints.searchFlights.FlightSearchResponse
-import com.example.relax.models.network.APIRepository
+import com.example.relax.models.endpoints.Flight
+import com.example.relax.models.endpoints.FlightSearchResponse
+import com.example.relax.models.network.FlightsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +15,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: APIRepository
+    private val repository: FlightsRepository
 ) : ViewModel(){
 
     private val _startingLocation = MutableStateFlow<List<Flight>?>(null)
@@ -23,9 +23,6 @@ class HomeViewModel @Inject constructor(
 
     private val _destination = MutableStateFlow<List<Flight>?>(null)
     val destination: StateFlow<List<Flight>?> = _destination.asStateFlow()
-
-    private val _flights = MutableStateFlow<FlightSearchResponse?>(null)
-    val flights: StateFlow<FlightSearchResponse?> = _flights.asStateFlow()
 
     private val _isSearchingFlights = MutableStateFlow(false)
     val isSearchingFlights: StateFlow<Boolean> = _isSearchingFlights.asStateFlow()
@@ -55,7 +52,7 @@ class HomeViewModel @Inject constructor(
                     _destination.value = result.data
                 }
             } catch (e: Exception){
-                Log.e("API_ERROR", "Error: ${e.message}")
+                Log.e("API_ERROR", "Error in getDestination: ${e.message}")
                 e.printStackTrace()
             }
         }
@@ -73,8 +70,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             try{
                 _isSearchingFlights.value = true
-                _flights.value = null
-                val result = repository.getFlights(
+                repository.getFlights(
                     fromId = fromId,
                     toId = toId,
                     departDate = departDate,
@@ -83,10 +79,9 @@ class HomeViewModel @Inject constructor(
                     children = children,
                     sort = sort,
                 )
-                Log.d("API_RESPONSE", "Success: $result")
-                _flights.value = result
+                Log.d("API_RESPONSE", "Success: ${repository.flightsSearchResponse}")
             } catch (e: Exception){
-                Log.e("API_ERROR", "Error: ${e.message}")
+                Log.e("API_ERROR", "Error in getFlights: ${e.message}")
                 e.printStackTrace()
             }
             finally {

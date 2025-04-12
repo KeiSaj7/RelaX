@@ -1,4 +1,4 @@
-package com.example.relax.models.endpoints.searchFlightLocation
+package com.example.relax.models.endpoints
 
 import com.google.gson.annotations.SerializedName
 
