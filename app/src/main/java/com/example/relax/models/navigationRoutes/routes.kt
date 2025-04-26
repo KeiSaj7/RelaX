@@ -6,6 +6,9 @@ import kotlinx.serialization.Serializable
 object HomeRoute
 
 @Serializable
+object ResultsGraphRoute
+
+@Serializable
 data class FlightsRoute(
     val destinationName: String?,
     val departDate: String,

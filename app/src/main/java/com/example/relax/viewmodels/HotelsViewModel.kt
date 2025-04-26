@@ -30,16 +30,28 @@ class HotelsViewModel @Inject constructor(
     private val _hotelDestId = MutableStateFlow<String?>(null)
     val hotelDestId: StateFlow<String?> = _hotelDestId.asStateFlow()
 
+    //private val _isDataLoaded = MutableStateFlow<Boolean>(false)
+    //val isDataLoaded: StateFlow<Boolean?> = _isDataLoaded.asStateFlow()
+
     init {
+        //if(isDataLoaded.value == false){ }
         getHotels()
+
     }
 
     fun getHotels(){
        viewModelScope.launch {
            try{
-               getDestinationId()
+               val destinationId = getDestinationId()
+
+               if (destinationId == null){
+                   _hotelDestId.value = null
+                   Log.e("HotelsViewModel", "Failed to get  destination ID for ${routeArgs.destinationName}")
+               }
+               _hotelDestId.value = destinationId
+
                 val response = repository.getHotels(
-                    destId = hotelDestId.value,
+                    destId = destinationId,
                     arrivalDate = routeArgs.checkInDate,
                     departureDate = routeArgs.checkOutDate,
                     adults = routeArgs.adults,
@@ -47,6 +59,7 @@ class HotelsViewModel @Inject constructor(
                 )
                Log.d("API_RESPONSE", "Success: $response")
                _hotels.value = response
+               //_isDataLoaded.value = true
            }
            catch (e: Exception){
                Log.e("API_ERROR", "Error in getHotels: ${e.message}, ${_hotelDestId.value}")
@@ -55,15 +68,17 @@ class HotelsViewModel @Inject constructor(
        }
     }
 
-    suspend fun getDestinationId() {
+    suspend fun getDestinationId(): String? {
         try{
             val hotelDestination = repository.getHotelDestination(query = routeArgs.destinationName)
             Log.d("API_RESPONSE", "Success: $hotelDestination")
-            _hotelDestId.value = hotelDestination.data?.get(0)?.destId
+            val fetchedId = hotelDestination.data?.firstOrNull {it.searchType == "city"}?.destId
+            return fetchedId
         }
         catch (e : Exception){
             Log.e("API_ERROR", "Error in getDestinationId: ${e.message}")
             e.printStackTrace()
+            return null
         }
     }
 

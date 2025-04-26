@@ -24,13 +24,15 @@ data class Property(
     @SerializedName("reviewCount") val reviewCount: Int?,
     @SerializedName("reviewScore") val reviewScore: Float?,
     @SerializedName("qualityClass") val qualityClass: String?,
+    @SerializedName("checkinDate") val checkinDate: String,
+    @SerializedName("checkoutDate") val checkoutDate: String,
     @SerializedName("checkin") val checkin: Checkin?,
     @SerializedName("checkout") val checkout: Checkout?,
     @SerializedName("priceBreakdown") val priceBreakDown: PriceBreakDown?,
 )
 
 data class PriceBreakDown(
-    @SerializedName("grossPrice") val grossPrice: Checkout?,
+    @SerializedName("grossPrice") val grossPrice: GrossPrice?,
 )
 
 data class GrossPrice(

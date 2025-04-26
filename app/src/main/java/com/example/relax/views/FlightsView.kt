@@ -161,10 +161,12 @@ fun FlightOffersList(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp) // Spacing between cards
     ) {
-        item { Button(onClick = {flightViewModel.navigateToHotels(navController)} ){
+        item { Button(
+            onClick = {flightViewModel.navigateToHotels(navController)} )
+            {
             Text("Hotels")
-        }}
-        // Optional: Add a header if needed
+            }
+        }
         item { Text("Available Flights", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp)) }
 
         items(items = flightOffers, key = { offer -> offer.hashCode() }) { offer -> // Use a stable key if possible

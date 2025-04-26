@@ -1,5 +1,6 @@
 package com.example.relax.models.network
 
+import android.util.Log
 import com.example.relax.models.endpoints.Flights
 import com.example.relax.models.endpoints.FlightSearchResponse
 import com.example.relax.models.endpoints.HotelDestinationResponse

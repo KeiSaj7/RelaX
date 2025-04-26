@@ -1,5 +1,6 @@
 package com.example.relax.views
 
+import android.util.Log
 import com.example.relax.models.navigationRoutes.FlightsRoute
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
@@ -24,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.relax.models.endpoints.Flight
+import com.example.relax.models.navigationRoutes.HotelsRoute
 import com.example.relax.viewmodels.HomeViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -272,8 +274,8 @@ fun StartScreen(
                     onClick = {
                         keyboardController?.hide()
                         focusManager.clearFocus()
-                        val startId = selectedStartFlight?.id // Use ID from selected Flight
-                        val destId = selectedDestinationFlight?.id // Use ID from selected Flight
+                        val startId = selectedStartFlight?.id
+                        val destId = selectedDestinationFlight?.id
                         val departDate = formattedSelectedDepartureDate
                         val returnDate = formattedSelectedReturnDate
 
@@ -287,9 +289,10 @@ fun StartScreen(
                                 adults = adults
                             )
                             // Navigate to results screen (assuming non-suspend getFlights)
+
                             navController.navigate(
                                 FlightsRoute(
-                                    destinationName = selectedDestinationFlight?.name,
+                                    destinationName = selectedDestinationFlight?.code,
                                     departDate = departDate,
                                     returnDate = returnDate,
                                     adults = adults,
@@ -297,7 +300,6 @@ fun StartScreen(
                                 )
                             )
                         } else {
-                            // Show validation error message
                             coroutineScope.launch {
                                 snackbarHostState.showSnackbar(
                                     message = "Please select departure, arrival, and date.",
