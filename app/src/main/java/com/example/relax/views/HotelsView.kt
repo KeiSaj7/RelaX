@@ -1,5 +1,7 @@
 package com.example.relax.views
 
+import android.content.Intent
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,11 +18,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -28,25 +33,82 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.navigation.NavController
 import com.example.relax.models.endpoints.GrossPrice
 import com.example.relax.models.endpoints.Hotel
+import com.example.relax.models.endpoints.HotelDetailsResponse
 import com.example.relax.viewmodels.HotelsViewModel
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @Composable
 fun HotelsView (navController: NavController, hotelViewModel: HotelsViewModel)
 {
     val hotelsResponse by hotelViewModel.hotels.collectAsState()
+
+    var showHotelBookingDialog by remember { mutableStateOf(false) }
+    var selectedHotelForBooking by remember { mutableStateOf<Hotel?>(null) }
+
+    // This state is for the INDIVIDUAL hotel's booking URL details from the ViewModel/Repository
+    val hotelUrlDetailsFromVM by hotelViewModel.urlResponse.collectAsState()
+
+    // Local state to manage what the dialog shows while fetching URL for *this specific interaction*
+    var isDialogFetchingUrl by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    // Effect to clear the repository's URL when the dialog is dismissed,
+    // so the next click doesn't show stale data while loading.
+    LaunchedEffect(showHotelBookingDialog) {
+        if (!showHotelBookingDialog) {
+            hotelViewModel.clearUrl() // Call VM method to clear repo's URL
+            isDialogFetchingUrl = false // Reset local loading flag
+        }
+    }
+
+    if (showHotelBookingDialog && selectedHotelForBooking != null) {
+        val hotel = selectedHotelForBooking!!
+
+        HotelBookingConfirmationDialog(
+            hotel = hotel,
+            isDialogCurrentlyFetchingUrl = isDialogFetchingUrl, // Pass local loading state
+            actualUrlDetailsResponse = hotelUrlDetailsFromVM,   // Pass actual data from repo
+            onConfirmOpenUrl = { bookingUrl ->
+                showHotelBookingDialog = false // This will trigger LaunchedEffect to clear URL
+                // selectedHotelForBooking = null // Not strictly needed, dialog closes
+
+                val intent = Intent(Intent.ACTION_VIEW, bookingUrl.toUri())
+                try {
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    Log.e("RelaxLOG", "Could not open URL: $bookingUrl. Error: ${e.message}")
+                }
+            },
+            onDismiss = {
+                showHotelBookingDialog = false // This will trigger LaunchedEffect to clear URL
+                // selectedHotelForBooking = null // Not strictly needed
+            }
+        )
+    }
+
 
     Scaffold { paddingValues ->
         Surface(
@@ -67,8 +129,39 @@ fun HotelsView (navController: NavController, hotelViewModel: HotelsViewModel)
                 else -> {
                     HotelsList(
                         navController = navController,
+                        hotelViewModel = hotelViewModel,
                         hotels = hotels,
-                        onHotelClick = { /* Handle hotel click if needed later */ }
+                        onHotelClick = { clickedHotel ->
+                            Log.d("RelaxLOG", "Hotel card clicked: ID ${clickedHotel.hotelId}")
+                            if (clickedHotel.hotelId == null) {
+                                Log.e("RelaxLOG", "Clicked hotel has a null ID. Cannot fetch details.")
+                                // Optionally show a toast/snackbar to the user here
+                                return@HotelsList
+                            }
+
+                            // Clear previous URL first to avoid showing stale data in dialog while loading
+                            hotelViewModel.clearUrl()
+
+                            selectedHotelForBooking = clickedHotel
+                            showHotelBookingDialog = true
+                            isDialogFetchingUrl = true // Start local loading indicator for dialog
+
+                            coroutineScope.launch {
+                                try {
+                                    Log.d("RelaxLOG", "Calling VM.getHotelDetails for ID: ${clickedHotel.hotelId}")
+                                    // Call the ViewModel's suspend function.
+                                    // This will update repository.url, which hotelUrlDetailsFromVM observes.
+                                    hotelViewModel.getHotelDetails(hotelId = clickedHotel.hotelId.toString())
+                                } catch (e: Exception) {
+                                    Log.e("RelaxLOG", "Error launching VM.getHotelDetails: ${e.message}")
+                                    // The ViewModel's getHotelDetails should ideally ensure repository.url
+                                    // is set to an error state (e.g., HotelDetailsResponse(status=false,...))
+                                    // or null, which the dialog will then pick up.
+                                } finally {
+                                    isDialogFetchingUrl = false // Stop local loading state for the dialog
+                                }
+                            }
+                        }
                     )
                 }
             }
@@ -77,8 +170,58 @@ fun HotelsView (navController: NavController, hotelViewModel: HotelsViewModel)
 }
 
 @Composable
+fun HotelBookingConfirmationDialog(
+    hotel: Hotel,
+    isDialogCurrentlyFetchingUrl: Boolean,     // Local loading state from HotelsView
+    actualUrlDetailsResponse: HotelDetailsResponse?, // Actual data from viewModel.urlResponse.value
+    onConfirmOpenUrl: (url: String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Redirect") },
+        title = { Text(text = "Book: ${hotel.property.hotelName ?: "Selected Hotel"}") },
+        text = {
+            if (isDialogCurrentlyFetchingUrl) {
+                // If HotelsView initiated a fetch for this dialog instance
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Fetching booking link...")
+                }
+            } else if (actualUrlDetailsResponse == null) {
+                // Fetch completed (isDialogCurrentlyFetchingUrl is false), but repo still has null
+                // This means the VM's getHotelDetails finished, and repo._url is still null (e.g. error in repo, or cleared)
+                Text("Booking details are not available. Please try again or check connection.")
+            } else if (actualUrlDetailsResponse.status == true && !actualUrlDetailsResponse.data?.url.isNullOrBlank()) {
+                // Success and URL is present in the repo's state
+                Text("You will be redirected to an external site to complete your booking. Continue?")
+            } else {
+                // API call for URL was made by VM, repo updated _url, but it reported an error or no URL
+                Text("Could not get booking link: ${actualUrlDetailsResponse.message ?: "Details unavailable."}\nPlease try again later.")
+            }
+        },
+        confirmButton = {
+            val bookingUrl = actualUrlDetailsResponse?.data?.url
+            // Enable confirm button only if NOT fetching LOCALLY AND we have a valid URL from a successful API call in repo
+            if (!isDialogCurrentlyFetchingUrl && actualUrlDetailsResponse?.status == true && !bookingUrl.isNullOrBlank()) {
+                TextButton(onClick = { onConfirmOpenUrl(bookingUrl) }) {
+                    Text("Yes, Continue")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
+}
+
+@Composable
 fun HotelsList(
     navController: NavController,
+    hotelViewModel: HotelsViewModel,
     hotels: List<Hotel>,
     onHotelClick: (Hotel) -> Unit = {} // Callback for item clicks if needed
 ) {
@@ -86,9 +229,18 @@ fun HotelsList(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item { Button(onClick = {navController.popBackStack()} ){
-            Text("Flights")
-        }}
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                Button(onClick = {
+                    hotelViewModel.clearUrl() // Clear URL before navigating away
+                    hotelViewModel.navigateToHome(navController)
+                }) { Text("Home") }
+                Button(onClick = {
+                    hotelViewModel.clearUrl() // Clear URL before navigating away
+                    hotelViewModel.navigateToFlights(navController)
+                }) { Text("Flights") }
+            }
+        }
         item {
             Text(
                 "Available Hotels",

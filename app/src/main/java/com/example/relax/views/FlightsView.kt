@@ -1,11 +1,12 @@
 package com.example.relax.views
 
-import android.annotation.SuppressLint
+import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.FlightLand
 import androidx.compose.material.icons.filled.FlightTakeoff
@@ -13,8 +14,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -24,9 +29,8 @@ import com.example.relax.models.endpoints.FlightOffer
 import com.example.relax.models.endpoints.PriceInfo
 import com.example.relax.models.endpoints.Segment
 import com.example.relax.viewmodels.FlightsViewModel
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import java.util.Locale
+import androidx.core.net.toUri
 
 
 @Composable
@@ -42,6 +46,40 @@ fun ResultView(
     // Use a local variable for smart casting within the 'when' block
     val currentResponse = responseState
 
+    // --- State for the confirmation dialog ---
+    var showConfirmationDialog by remember { mutableStateOf(false) }
+    var selectedOfferForBooking by remember { mutableStateOf<FlightOffer?>(null) }
+    val context = LocalContext.current // Get context for launching intent
+
+    // --- Dialog Logic ---
+    if (showConfirmationDialog && selectedOfferForBooking != null) {
+        val offer = selectedOfferForBooking!! // Safe because of the check
+        val bookingUrl = "https://flights.booking.com/checkout/ticket-type/${offer.token}" // Your static link for now
+        // In a real app, bookingUrl might be:
+        // val bookingUrl = constructBookingUrl(offer.token, flightViewModel.routeArgs.pointOfSale) // Example
+        // or from offer.supplierInfo.bookingLink if available.
+
+        ConfirmationDialog(
+            offer = offer, // Pass the offer to display info if needed
+            onConfirm = {
+                showConfirmationDialog = false
+                selectedOfferForBooking = null
+                // Create an Intent to open the URL
+                val intent = Intent(Intent.ACTION_VIEW, bookingUrl.toUri())
+                try {
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    // Handle cases where no browser is available or URL is invalid
+                    // You might show a Snackbar or Toast here
+                    println("Could not open URL: $bookingUrl. Error: ${e.message}")
+                }
+            },
+            onDismiss = {
+                showConfirmationDialog = false
+                selectedOfferForBooking = null
+            }
+        )
+    }
     // Scaffold provides basic Material layout structure (optional but good practice)
     Scaffold { paddingValues ->
         Surface(
@@ -57,29 +95,20 @@ fun ResultView(
                     LoadingIndicator()
                 }
 
-                // 2. Error state (explicitly indicated by API)
-                currentResponse.status == false -> {
-                    ErrorView(message = currentResponse.message ?: "An unknown error occurred.")
-                }
-
-                // 3. Malformed success state (API said success, but data is missing)
-                currentResponse.data?.flightOffers == null -> {
-                    ErrorView(message = currentResponse.message ?: "Received response but flight data is missing.")
-                }
-
-                // 4. No results state (successful response, but empty flight list)
-                currentResponse.data.flightOffers.isEmpty() -> {
+                currentResponse.data!!.flightOffers!!.isEmpty() -> {
                     EmptyResultsView(message = "No flight offers found matching your criteria.")
                 }
 
-                // 5. Success state - We have flight offers to display!
                 else -> {
                     // Pass the non-null list and the click handler to the list composable
                     FlightOffersList(
                         navController = navController,
                         flightViewModel = flightsViewModel,
                         flightOffers = currentResponse.data.flightOffers,
-                        onFlightOfferClick = onFlightOfferClick
+                        onFlightOfferClick = { offer ->
+                            selectedOfferForBooking = offer
+                            showConfirmationDialog = true
+                        }
                     )
                 }
             }
@@ -161,15 +190,18 @@ fun FlightOffersList(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp) // Spacing between cards
     ) {
-        item { Button(
-            onClick = {flightViewModel.navigateToHotels(navController)} )
-            {
-            Text("Hotels")
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly // Space out buttons
+            ) {
+                Button(onClick = { flightViewModel.navigateToHome(navController) }) { Text("Home") }
+                Button(onClick = { flightViewModel.navigateToHotels(navController) }) { Text("Hotels") }
             }
         }
         item { Text("Available Flights", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp)) }
 
-        items(items = flightOffers, key = { offer -> offer.hashCode() }) { offer -> // Use a stable key if possible
+        items(items = flightOffers, key = { offer -> offer.token ?: offer.hashCode() }) { offer -> // Use a stable key if possible
             FlightOfferCard(
                 offer = offer,
                 // When this card is clicked, invoke the callback passed from ResultView
@@ -177,6 +209,36 @@ fun FlightOffersList(
             )
         }
     }
+}
+
+@Composable
+fun ConfirmationDialog(
+    offer: FlightOffer, // You can use this to display offer details in dialog if desired
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    // You can customize this dialog further.
+    // For a simple one:
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Redirect") },
+        title = { Text("Confirm Booking") },
+        text = {
+            Text("You will be redirected to an external site to complete your booking for this flight. Continue?")
+            // Optionally, display some offer details here:
+            // Text("\nPrice: ${formatPrice(offer.priceBreakdown?.total)}")
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("Yes, Continue")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("No, Cancel")
+            }
+        }
+    )
 }
 
 // --- Composable for a single flight offer card ---
@@ -344,15 +406,9 @@ fun formatPrice(priceInfo: PriceInfo?): String {
     }
 }
 
-// Formatter for displaying date and time - uses device locale settings
-@SuppressLint("ConstantLocale")
-private val displayDateTimeFormatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
-    .withLocale(Locale.getDefault())
 
 // Parser for the ISO_OFFSET_DATE_TIME format from your API ("2025-05-01T13:25:00")
 // IMPORTANT: Your example log shows "2025-05-01T13:25:00" which is MISSING the offset (+00:00 or Z)
 // If the API *always* returns times without offset, we need to handle that.
 // Assuming it *should* have an offset or is implicitly UTC. If not, parsing needs adjustment.
 // Let's try ISO_OFFSET_DATE_TIME first, but add a fallback for LOCAL_DATE_TIME.
-private val isoOffsetDateTimeParser = DateTimeFormatter.ISO_OFFSET_DATE_TIME
-// private val isoLocalDateTimeParser = DateTimeFormatter.ISO_LOCAL_DATE_TIME // Fallback if no offset

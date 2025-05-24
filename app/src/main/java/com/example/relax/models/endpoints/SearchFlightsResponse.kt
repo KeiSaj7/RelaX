@@ -18,6 +18,7 @@ data class DataContainer(
 
 @Serializable
 data class FlightOffer(
+    @SerializedName("token") val token: String?,
     @SerializedName("segments") val segments: List<Segment>?,
     @SerializedName("priceBreakdown") val priceBreakdown: MinimalPriceBreakdown?,
     @SerializedName("pointOfSale") val pointOfSale: String?,

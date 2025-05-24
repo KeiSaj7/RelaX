@@ -1,5 +1,6 @@
 package com.example.relax.models.network
 
+import android.util.Log
 import com.example.relax.models.endpoints.Flights
 import com.example.relax.models.endpoints.FlightSearchResponse
 import com.example.relax.models.endpoints.HotelDestinationResponse
@@ -15,6 +16,11 @@ class FlightsRepository @Inject constructor(private val flightsService: FlightsS
 
     private val _flightsSearchResponse = MutableStateFlow<FlightSearchResponse?>(null)
     val flightsSearchResponse: StateFlow<FlightSearchResponse?> = _flightsSearchResponse.asStateFlow()
+
+    fun clearResponse(){
+        Log.d("RelaxLOG", "Flights data cleared.")
+        _flightsSearchResponse.value = null
+    }
 
     suspend fun getDestination(query: String): Flights {
         return flightsService.getDestination(query)

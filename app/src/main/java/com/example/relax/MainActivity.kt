@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    composable<FlightsRoute> { backStackEntry ->
+                    composable<FlightsRoute> {
                         val flightViewModel: FlightsViewModel = hiltViewModel()
                         ResultView(
                             navController = navController,
@@ -47,7 +47,6 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable<HotelsRoute> {
-                        backStackEntry ->
                         val hotelsViewModel: HotelsViewModel = hiltViewModel()
                         HotelsView(
                             navController = navController,

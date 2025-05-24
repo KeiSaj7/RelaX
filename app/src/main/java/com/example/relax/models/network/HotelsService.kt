@@ -3,11 +3,24 @@ package com.example.relax.models.network
 import com.example.relax.models.endpoints.Flights
 import com.example.relax.models.endpoints.FlightSearchResponse
 import com.example.relax.models.endpoints.HotelDestinationResponse
+import com.example.relax.models.endpoints.HotelDetailsResponse
 import com.example.relax.models.endpoints.SearchHotelsResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface HotelsService {
+    @GET("hotels/getHotelDetails")
+    suspend fun getHotelDetails(
+        @Query("hotel_id") hotelId: String,
+        @Query("arrival_date") arrivalDate: String,
+        @Query("departure_date") departureDate: String,
+        @Query("adults") adults: Int,
+        @Query("children") children: String?,
+        @Query("room_qty") roomQuantity: Int? = 1,
+        @Query("languagecode") languagecode: String = "pl",
+        @Query("currency_code") currencyCode: String = "PLN",
+    ): HotelDetailsResponse
+
     @GET("hotels/searchDestination")
     suspend fun getHotelDestination(
         @Query("query") query: String?

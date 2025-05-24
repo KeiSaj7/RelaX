@@ -44,7 +44,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             try{
                 val result = repository.getDestination(query)
-                Log.d("API_RESPONSE", "Success: $result")
+                Log.d("RelaxLOG", "Success: $result")
                 if(point == "start"){
                     _startingLocation.value = result.data
                 }
@@ -52,7 +52,7 @@ class HomeViewModel @Inject constructor(
                     _destination.value = result.data
                 }
             } catch (e: Exception){
-                Log.e("API_ERROR", "Error in getDestination: ${e.message}")
+                Log.e("RelaxLOG", "Error in getDestination: ${e.message}")
                 e.printStackTrace()
             }
         }
@@ -79,9 +79,9 @@ class HomeViewModel @Inject constructor(
                     children = children,
                     sort = sort,
                 )
-                Log.d("API_RESPONSE", "Success: ${repository.flightsSearchResponse}")
+                Log.d("RelaxLOG", "Success: ${repository.flightsSearchResponse}")
             } catch (e: Exception){
-                Log.e("API_ERROR", "Error in getFlights: ${e.message}")
+                Log.e("RelaxLOG", "Error in getFlights: ${e.message}")
                 e.printStackTrace()
             }
             finally {

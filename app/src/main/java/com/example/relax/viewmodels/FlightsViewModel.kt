@@ -7,14 +7,17 @@ import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import androidx.navigation.toRoute
 import com.example.relax.models.endpoints.FlightSearchResponse
+import com.example.relax.models.navigationRoutes.HomeRoute
 import com.example.relax.models.network.FlightsRepository
+import com.example.relax.models.network.HotelsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 
 @HiltViewModel
 class FlightsViewModel @Inject constructor(
-    repository: FlightsRepository,
+    private val repository: FlightsRepository,
+    private val hotelsRepository: HotelsRepository,
     savedStateHandle: SavedStateHandle
 ): ViewModel(){
 
@@ -32,6 +35,12 @@ class FlightsViewModel @Inject constructor(
                 children = routeArgs.children
             )
         )
+    }
+
+    fun navigateToHome(navController: NavController) {
+        hotelsRepository.clearResponse()
+        repository.clearResponse()
+        navController.popBackStack()
     }
 
 }

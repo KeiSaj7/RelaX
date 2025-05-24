@@ -79,7 +79,7 @@ fun StartScreen(
             return
         }
         searchJob = coroutineScope.launch {
-            delay(700) // Adjust debounce delay (milliseconds)
+            delay(1200) // Adjust debounce delay (milliseconds)
             homeViewModel.getDestination(query, point)
             // Show dropdown once search is triggered (will populate when state updates)
             if (point == "start") isStartDropdownVisible = true else isDestDropdownVisible = true
