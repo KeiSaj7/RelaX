@@ -9,7 +9,10 @@ import androidx.navigation.NavController
 import androidx.navigation.toRoute
 import com.example.relax.models.endpoints.HotelDetailsResponse
 import com.example.relax.models.endpoints.SearchHotelsResponse
+import com.example.relax.models.navigationRoutes.AttractionsRoute
+import com.example.relax.models.navigationRoutes.FlightsRoute
 import com.example.relax.models.navigationRoutes.HomeRoute
+import com.example.relax.models.network.AttractionsRepository
 import com.example.relax.models.network.FlightsRepository
 import com.example.relax.models.network.HotelsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +29,7 @@ import javax.inject.Inject
 class HotelsViewModel @Inject constructor(
     private val repository: HotelsRepository,
     private val flightsRepository: FlightsRepository,
+    private val attractionsRepository: AttractionsRepository,
     savedStateHandle: SavedStateHandle
 ): ViewModel(){
 
@@ -131,11 +135,23 @@ class HotelsViewModel @Inject constructor(
     }
 
     fun navigateToFlights(navController: NavController) {
-        navController.popBackStack()
+        navController.navigate(
+            FlightsRoute()
+        )
+    }
+
+    fun navigateToAttractions(navController: NavController){
+        navController.navigate(
+            AttractionsRoute(
+                destinationName = routeArgs.destinationName!!
+            )
+
+        )
     }
 
     fun navigateToHome(navController: NavController) {
         repository.clearResponse()
+        attractionsRepository.clearResponse()
         flightsRepository.clearResponse()
         navController.navigate(
             HomeRoute

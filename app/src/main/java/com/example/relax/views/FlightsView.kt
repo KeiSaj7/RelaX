@@ -197,6 +197,8 @@ fun FlightOffersList(
             ) {
                 Button(onClick = { flightViewModel.navigateToHome(navController) }) { Text("Home") }
                 Button(onClick = { flightViewModel.navigateToHotels(navController) }) { Text("Hotels") }
+                Button(onClick = { flightViewModel.navigateToAttractions(navController) }) { Text("Attractions") }
+
             }
         }
         item { Text("Available Flights", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp)) }

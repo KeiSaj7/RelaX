@@ -52,4 +52,10 @@ class NetworkModule {
     fun provideHotelsService(retrofit: Retrofit): HotelsService{
         return retrofit.create(HotelsService::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideAttractionsService(retrofit: Retrofit): AttractionsService{
+        return retrofit.create(AttractionsService::class.java)
+    }
 }

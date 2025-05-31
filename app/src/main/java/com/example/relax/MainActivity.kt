@@ -11,10 +11,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.relax.models.navigationRoutes.AttractionsRoute
 import com.example.relax.ui.theme.RelaXTheme
+import com.example.relax.viewmodels.AttractionsViewModel
 import com.example.relax.viewmodels.FlightsViewModel
 import com.example.relax.viewmodels.HomeViewModel
 import com.example.relax.viewmodels.HotelsViewModel
+import com.example.relax.views.AttractionsView
 import com.example.relax.views.HotelsView
 import com.example.relax.views.StartScreen
 import com.example.relax.views.ResultView
@@ -51,6 +54,14 @@ class MainActivity : ComponentActivity() {
                         HotelsView(
                             navController = navController,
                             hotelViewModel = hotelsViewModel
+                        )
+                    }
+
+                    composable<AttractionsRoute> {
+                        val attractionsViewmodel: AttractionsViewModel = hiltViewModel()
+                        AttractionsView(
+                            navController = navController,
+                            attractionsViewModel = attractionsViewmodel
                         )
                     }
                 }

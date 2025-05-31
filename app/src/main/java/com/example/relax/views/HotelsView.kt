@@ -239,6 +239,10 @@ fun HotelsList(
                     hotelViewModel.clearUrl() // Clear URL before navigating away
                     hotelViewModel.navigateToFlights(navController)
                 }) { Text("Flights") }
+                Button(onClick = {
+                    hotelViewModel.clearUrl() // Clear URL before navigating away
+                    hotelViewModel.navigateToAttractions(navController)
+                }) { Text("Attractions") }
             }
         }
         item {
