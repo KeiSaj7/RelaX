@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.relax.models.endpoints.Flight
-import com.example.relax.models.endpoints.FlightSearchResponse
 import com.example.relax.models.network.FlightsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +25,7 @@ class HomeViewModel @Inject constructor(
 
     private val _isSearchingFlights = MutableStateFlow(false)
     val isSearchingFlights: StateFlow<Boolean> = _isSearchingFlights.asStateFlow()
+
 
     fun clearLocationSuggestions(point: String) {
         if (point == "start") {

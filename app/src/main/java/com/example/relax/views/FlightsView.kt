@@ -32,7 +32,6 @@ import com.example.relax.viewmodels.FlightsViewModel
 import java.util.Locale
 import androidx.core.net.toUri
 
-
 @Composable
 fun ResultView(
     navController: NavController,
@@ -94,6 +93,9 @@ fun ResultView(
                 currentResponse == null -> {
                     LoadingIndicator()
                 }
+                currentResponse.status == false -> {
+                    FlightsErrorView(flightsViewModel, navController)
+                }
 
                 currentResponse.data!!.flightOffers!!.isEmpty() -> {
                     EmptyResultsView(message = "No flight offers found matching your criteria.")
@@ -129,7 +131,27 @@ fun LoadingIndicator() {
 }
 
 @Composable
-fun ErrorView(message: String) {
+fun EmptyResultsView(message: String) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant // Softer color
+        )
+    }
+}
+
+@Composable
+fun FlightsErrorView(
+    flightsViewModel: FlightsViewModel,
+    navController: NavController
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -151,31 +173,19 @@ fun ErrorView(message: String) {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = message,
+            text = "Error occurred. Please try again. ",
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center
         )
         // Optional: Add a "Retry" button here if applicable
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = {
+                flightsViewModel.navigateToHome(navController)
+            }
+        ) { Text("Retry") }
     }
 }
-
-@Composable
-fun EmptyResultsView(message: String) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant // Softer color
-        )
-    }
-}
-
 // --- Composable for the list of flights ---
 
 @Composable

@@ -25,6 +25,7 @@ import androidx.navigation.NavController
 import com.example.relax.models.endpoints.Attraction // Your Attraction data class
 import com.example.relax.models.endpoints.RepresentativePrice // Your Price data class
 import com.example.relax.viewmodels.AttractionsViewModel
+import com.example.relax.viewmodels.HotelsViewModel
 import java.util.Locale
 
 // Assuming your ViewModel has a way to represent loading/error/success for the list
@@ -62,9 +63,17 @@ fun AttractionsView(
             // Handle different states
             // This logic assumes that if attractionsList is null, it's loading or an error occurred before data arrived.
             // A more robust ViewModel would expose a sealed interface for ResultState (Idle, Loading, Success, Error).
+            val errorFlag = attractionsViewModel.errorFlag.collectAsState().value
+            val status = attractionsViewModel.status.collectAsState().value
             when {
+                errorFlag == true -> {
+                    AttractionsErrorView(attractionsViewModel, navController)
+                }
                 attractionsList == null -> { // Assuming VM has a flag for fetch attempt
                     LoadingIndicator()
+                }
+                status == false -> {
+                    AttractionsErrorView(attractionsViewModel, navController)
                 }
                 attractionsList?.isEmpty() == true -> {
                     EmptyResultsView(message = "No attractions found for this location.")
@@ -83,6 +92,47 @@ fun AttractionsView(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun AttractionsErrorView(
+    attractionsViewModel: AttractionsViewModel,
+    navController: NavController
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Filled.ErrorOutline,
+            contentDescription = "Error",
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(64.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Search Error", // Changed title slightly
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.error
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Error occurred. Please try again. ",
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center
+        )
+        // Optional: Add a "Retry" button here if applicable
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = {
+                attractionsViewModel.changeFlag(false)
+                attractionsViewModel.navigateToFlights(navController)
+            }
+        ) { Text("Retry") }
     }
 }
 

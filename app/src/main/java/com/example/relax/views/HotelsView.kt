@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
@@ -109,7 +110,6 @@ fun HotelsView (navController: NavController, hotelViewModel: HotelsViewModel)
         )
     }
 
-
     Scaffold { paddingValues ->
         Surface(
             modifier = Modifier
@@ -118,10 +118,16 @@ fun HotelsView (navController: NavController, hotelViewModel: HotelsViewModel)
             color = MaterialTheme.colorScheme.background
         ) {
             val hotels = hotelsResponse?.data?.hotels
+            val errorFlag = hotelViewModel.errorFlag.collectAsState().value
             when {
+                errorFlag == true -> {
+                    HotelsErrorView(hotelViewModel, navController)
+                }
                 hotels == null -> {
                     LoadingIndicator()
-                    //ErrorView(message = "Received response but hotel data is missing.")
+                }
+                hotelsResponse?.status == false -> {
+                    HotelsErrorView(hotelViewModel, navController)
                 }
                 hotels.isEmpty() -> {
                     EmptyResultsView(message = "No hotels found matching your criteria.") // Reuse
@@ -169,6 +175,46 @@ fun HotelsView (navController: NavController, hotelViewModel: HotelsViewModel)
         }
 }
 
+@Composable
+fun HotelsErrorView(
+    hotelViewModel: HotelsViewModel,
+    navController: NavController
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Filled.ErrorOutline,
+            contentDescription = "Error",
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(64.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Search Error", // Changed title slightly
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.error
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Error occurred. Please try again. ",
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center
+        )
+        // Optional: Add a "Retry" button here if applicable
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = {
+                hotelViewModel.changeFlag(false)
+                hotelViewModel.navigateToFlights(navController)
+            }
+        ) { Text("Retry") }
+    }
+}
 @Composable
 fun HotelBookingConfirmationDialog(
     hotel: Hotel,

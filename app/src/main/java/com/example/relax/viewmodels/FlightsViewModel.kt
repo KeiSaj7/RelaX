@@ -24,18 +24,23 @@ class FlightsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ): ViewModel(){
 
+    init {
+        repository.updateRouteArgs(savedStateHandle.toRoute())
+    }
     val flights: StateFlow<FlightSearchResponse?> = repository.flightsSearchResponse
 
-    val routeArgs: FlightsRoute = savedStateHandle.toRoute()
+    val routeArgs: StateFlow<FlightsRoute?> = repository.routeArgs
+
+
 
     fun navigateToHotels(navController: NavController) {
         navController.navigate(
             HotelsRoute(
-                destinationName = routeArgs.destinationName,
-                checkInDate = routeArgs.departDate!!,
-                checkOutDate = routeArgs.returnDate!!,
-                adults = routeArgs.adults!!,
-                children = routeArgs.children
+                destinationName = routeArgs.value!!.destinationName,
+                checkInDate = routeArgs.value!!.departDate!!,
+                checkOutDate = routeArgs.value!!.returnDate!!,
+                adults = routeArgs.value!!.adults!!,
+                children = routeArgs.value!!.children
             )
         )
     }
@@ -43,7 +48,7 @@ class FlightsViewModel @Inject constructor(
     fun navigateToAttractions(navController: NavController){
         navController.navigate(
             AttractionsRoute(
-                destinationName = routeArgs.destinationName!!
+                destinationName = routeArgs.value!!.destinationName!!
             )
 
         )

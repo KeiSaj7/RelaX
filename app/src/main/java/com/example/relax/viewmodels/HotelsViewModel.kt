@@ -33,7 +33,7 @@ class HotelsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ): ViewModel(){
 
-    private val routeArgs: HotelsRoute = savedStateHandle.toRoute()
+    val routeArgs: StateFlow<HotelsRoute?> = repository.routeArgs
 
     val hotels: StateFlow<SearchHotelsResponse?> = repository.cache
 
@@ -42,6 +42,9 @@ class HotelsViewModel @Inject constructor(
     private val _hotelDestId = MutableStateFlow<String?>(null)
     val hotelDestId: StateFlow<String?> = _hotelDestId.asStateFlow()
 
+    private val _errorFlag = MutableStateFlow<Boolean>(false)
+    val errorFlag: StateFlow<Boolean> = _errorFlag.asStateFlow()
+
     var departDate: String? = ""
 
     init {
@@ -49,6 +52,7 @@ class HotelsViewModel @Inject constructor(
             Log.d("RelaxLOG", "Hotels already fetched.")
         }
         else {
+            repository.updateRouteArgs(savedStateHandle.toRoute())
             getHotels()
         }
     }
@@ -60,29 +64,30 @@ class HotelsViewModel @Inject constructor(
 
                if (destinationId == null){
                    _hotelDestId.value = null
-                   Log.e("RelaxLOG", "Failed to get  destination ID for ${routeArgs.destinationName}")
+                   Log.e("RelaxLOG", "Failed to get  destination ID for ${routeArgs.value!!.destinationName}")
                }
                val effectiveCheckOut: String?
                _hotelDestId.value = destinationId
-                Log.d("RelaxLOG", "Success: $destinationId, ${routeArgs.checkInDate}, ${routeArgs.checkOutDate}, ${routeArgs.adults}, ${routeArgs.children}")
-               if (routeArgs.checkOutDate.isBlank()){
-                   Log.d("RelaxLOG", "checkOutDate is blank, setting to default date: ${routeArgs.checkInDate}")
-                   departDate = calculateNextDay(routeArgs.checkInDate)
+                Log.d("RelaxLOG", "Success: $destinationId, ${routeArgs.value!!.checkInDate}, ${routeArgs.value!!.checkOutDate}, ${routeArgs.value!!.adults}, ${routeArgs.value!!.children}")
+               if (routeArgs.value!!.checkOutDate.isBlank()){
+                   Log.d("RelaxLOG", "checkOutDate is blank, setting to default date: ${routeArgs.value!!.checkInDate}")
+                   departDate = calculateNextDay(routeArgs.value!!.checkInDate)
                }
                else{
-                   departDate = routeArgs.checkOutDate
+                   departDate = routeArgs.value!!.checkOutDate
                }
                 val response = repository.getHotels(
                     destId = destinationId,
-                    arrivalDate = routeArgs.checkInDate,
+                    arrivalDate = routeArgs.value!!.checkInDate,
                     departureDate = departDate.toString(),
-                    adults = routeArgs.adults,
-                    children = routeArgs.children
+                    adults = routeArgs.value!!.adults,
+                    children = routeArgs.value!!.children
                 )
                Log.d("RelaxLOG", "Success: $response")
                repository.insertIntoCache(response)
            }
            catch (e: Exception){
+               _errorFlag.value = true
                Log.e("RelaxLOG", "Error in getHotels: ${e.message}, ${_hotelDestId.value}")
                e.printStackTrace()
            }
@@ -93,10 +98,10 @@ class HotelsViewModel @Inject constructor(
         try{
             repository.getHotelDetails(
                 hotelId = hotelId,
-                arrivalDate = routeArgs.checkInDate,
+                arrivalDate = routeArgs.value!!.checkInDate,
                 departureDate = departDate.toString(),
-                adults = routeArgs.adults,
-                children = routeArgs.children
+                adults = routeArgs.value!!.adults,
+                children = routeArgs.value!!.children
             )
         }
         catch (e : Exception){
@@ -108,12 +113,13 @@ class HotelsViewModel @Inject constructor(
 
     suspend fun getDestinationId(): String? {
         try{
-            val hotelDestination = repository.getHotelDestination(query = routeArgs.destinationName)
+            val hotelDestination = repository.getHotelDestination(query = routeArgs.value!!.destinationName)
             Log.d("RelaxLOG", "Success: $hotelDestination")
             val fetchedId = hotelDestination.data?.firstOrNull {it.searchType == "city"}?.destId
             return fetchedId
         }
         catch (e : Exception){
+            _errorFlag.value = true
             e.printStackTrace()
             return null
         }
@@ -121,6 +127,10 @@ class HotelsViewModel @Inject constructor(
 
     fun clearUrl(){
         repository.clearUrl()
+    }
+
+    fun changeFlag(status: Boolean){
+        _errorFlag.value = status
     }
 
     private fun calculateNextDay(dateString: String, format: String = "yyyy-MM-dd"): String? {
@@ -136,14 +146,20 @@ class HotelsViewModel @Inject constructor(
 
     fun navigateToFlights(navController: NavController) {
         navController.navigate(
-            FlightsRoute()
+            FlightsRoute(
+                destinationName = routeArgs.value!!.destinationName,
+                departDate = routeArgs.value!!.checkInDate,
+                returnDate = routeArgs.value!!.checkOutDate,
+                adults = routeArgs.value!!.adults,
+                children = routeArgs.value!!.children
+            )
         )
     }
 
     fun navigateToAttractions(navController: NavController){
         navController.navigate(
             AttractionsRoute(
-                destinationName = routeArgs.destinationName!!
+                destinationName = routeArgs.value!!.destinationName!!
             )
 
         )

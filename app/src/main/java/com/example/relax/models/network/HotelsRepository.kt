@@ -4,6 +4,8 @@ import android.util.Log
 import com.example.relax.models.endpoints.HotelDestinationResponse
 import com.example.relax.models.endpoints.HotelDetailsResponse
 import com.example.relax.models.endpoints.SearchHotelsResponse
+import com.example.relax.models.navigationRoutes.FlightsRoute
+import com.example.relax.models.navigationRoutes.HotelsRoute
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,6 +21,13 @@ class HotelsRepository @Inject constructor(private val hotelsService: HotelsServ
     private val _url = MutableStateFlow<HotelDetailsResponse?>(null)
     val url: StateFlow<HotelDetailsResponse?> = _url.asStateFlow()
 
+    private val _routeArgs = MutableStateFlow<HotelsRoute?>(null)
+    val routeArgs: StateFlow<HotelsRoute?> = _routeArgs.asStateFlow()
+
+    fun updateRouteArgs(args: HotelsRoute?){
+        _routeArgs.value = args
+    }
+    
     fun clearResponse(){
         Log.d("RelaxLOG", "Hotels data cleared.")
         _cache.value = null

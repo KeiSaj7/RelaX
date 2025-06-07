@@ -1,6 +1,5 @@
 package com.example.relax.views
 
-import android.util.Log
 import com.example.relax.models.navigationRoutes.FlightsRoute
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
@@ -25,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.relax.models.endpoints.Flight
-import com.example.relax.models.navigationRoutes.HotelsRoute
 import com.example.relax.viewmodels.HomeViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay

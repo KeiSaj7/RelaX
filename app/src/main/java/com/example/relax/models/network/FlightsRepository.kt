@@ -5,6 +5,7 @@ import com.example.relax.models.endpoints.Flights
 import com.example.relax.models.endpoints.FlightSearchResponse
 import com.example.relax.models.endpoints.HotelDestinationResponse
 import com.example.relax.models.endpoints.SearchHotelsResponse
+import com.example.relax.models.navigationRoutes.FlightsRoute
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,6 +17,13 @@ class FlightsRepository @Inject constructor(private val flightsService: FlightsS
 
     private val _flightsSearchResponse = MutableStateFlow<FlightSearchResponse?>(null)
     val flightsSearchResponse: StateFlow<FlightSearchResponse?> = _flightsSearchResponse.asStateFlow()
+
+    private val _routeArgs = MutableStateFlow<FlightsRoute?>(null)
+    val routeArgs: StateFlow<FlightsRoute?> = _routeArgs.asStateFlow()
+
+    fun updateRouteArgs(args: FlightsRoute?){
+        _routeArgs.value = args
+    }
 
     fun clearResponse(){
         Log.d("RelaxLOG", "Flights data cleared.")
