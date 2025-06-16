@@ -67,21 +67,17 @@ fun HotelsView (navController: NavController, hotelViewModel: HotelsViewModel)
     var showHotelBookingDialog by remember { mutableStateOf(false) }
     var selectedHotelForBooking by remember { mutableStateOf<Hotel?>(null) }
 
-    // This state is for the INDIVIDUAL hotel's booking URL details from the ViewModel/Repository
     val hotelUrlDetailsFromVM by hotelViewModel.urlResponse.collectAsState()
 
-    // Local state to manage what the dialog shows while fetching URL for *this specific interaction*
     var isDialogFetchingUrl by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    // Effect to clear the repository's URL when the dialog is dismissed,
-    // so the next click doesn't show stale data while loading.
     LaunchedEffect(showHotelBookingDialog) {
         if (!showHotelBookingDialog) {
-            hotelViewModel.clearUrl() // Call VM method to clear repo's URL
-            isDialogFetchingUrl = false // Reset local loading flag
+            hotelViewModel.clearUrl()
+            isDialogFetchingUrl = false
         }
     }
 
@@ -90,11 +86,10 @@ fun HotelsView (navController: NavController, hotelViewModel: HotelsViewModel)
 
         HotelBookingConfirmationDialog(
             hotel = hotel,
-            isDialogCurrentlyFetchingUrl = isDialogFetchingUrl, // Pass local loading state
-            actualUrlDetailsResponse = hotelUrlDetailsFromVM,   // Pass actual data from repo
+            isDialogCurrentlyFetchingUrl = isDialogFetchingUrl,
+            actualUrlDetailsResponse = hotelUrlDetailsFromVM,
             onConfirmOpenUrl = { bookingUrl ->
-                showHotelBookingDialog = false // This will trigger LaunchedEffect to clear URL
-                // selectedHotelForBooking = null // Not strictly needed, dialog closes
+                showHotelBookingDialog = false
 
                 val intent = Intent(Intent.ACTION_VIEW, bookingUrl.toUri())
                 try {
@@ -104,8 +99,7 @@ fun HotelsView (navController: NavController, hotelViewModel: HotelsViewModel)
                 }
             },
             onDismiss = {
-                showHotelBookingDialog = false // This will trigger LaunchedEffect to clear URL
-                // selectedHotelForBooking = null // Not strictly needed
+                showHotelBookingDialog = false
             }
         )
     }
@@ -130,7 +124,7 @@ fun HotelsView (navController: NavController, hotelViewModel: HotelsViewModel)
                     HotelsErrorView(hotelViewModel, navController)
                 }
                 hotels.isEmpty() -> {
-                    EmptyResultsView(message = "No hotels found matching your criteria.") // Reuse
+                    EmptyResultsView(message = "No hotels found matching your criteria.")
                 }
                 else -> {
                     HotelsList(
@@ -141,30 +135,23 @@ fun HotelsView (navController: NavController, hotelViewModel: HotelsViewModel)
                             Log.d("RelaxLOG", "Hotel card clicked: ID ${clickedHotel.hotelId}")
                             if (clickedHotel.hotelId == null) {
                                 Log.e("RelaxLOG", "Clicked hotel has a null ID. Cannot fetch details.")
-                                // Optionally show a toast/snackbar to the user here
                                 return@HotelsList
                             }
 
-                            // Clear previous URL first to avoid showing stale data in dialog while loading
                             hotelViewModel.clearUrl()
 
                             selectedHotelForBooking = clickedHotel
                             showHotelBookingDialog = true
-                            isDialogFetchingUrl = true // Start local loading indicator for dialog
+                            isDialogFetchingUrl = true
 
                             coroutineScope.launch {
                                 try {
                                     Log.d("RelaxLOG", "Calling VM.getHotelDetails for ID: ${clickedHotel.hotelId}")
-                                    // Call the ViewModel's suspend function.
-                                    // This will update repository.url, which hotelUrlDetailsFromVM observes.
                                     hotelViewModel.getHotelDetails(hotelId = clickedHotel.hotelId.toString())
                                 } catch (e: Exception) {
                                     Log.e("RelaxLOG", "Error launching VM.getHotelDetails: ${e.message}")
-                                    // The ViewModel's getHotelDetails should ideally ensure repository.url
-                                    // is set to an error state (e.g., HotelDetailsResponse(status=false,...))
-                                    // or null, which the dialog will then pick up.
                                 } finally {
-                                    isDialogFetchingUrl = false // Stop local loading state for the dialog
+                                    isDialogFetchingUrl = false
                                 }
                             }
                         }
@@ -205,7 +192,6 @@ fun HotelsErrorView(
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center
         )
-        // Optional: Add a "Retry" button here if applicable
         Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = {
@@ -218,8 +204,8 @@ fun HotelsErrorView(
 @Composable
 fun HotelBookingConfirmationDialog(
     hotel: Hotel,
-    isDialogCurrentlyFetchingUrl: Boolean,     // Local loading state from HotelsView
-    actualUrlDetailsResponse: HotelDetailsResponse?, // Actual data from viewModel.urlResponse.value
+    isDialogCurrentlyFetchingUrl: Boolean,
+    actualUrlDetailsResponse: HotelDetailsResponse?,
     onConfirmOpenUrl: (url: String) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -229,27 +215,21 @@ fun HotelBookingConfirmationDialog(
         title = { Text(text = "Book: ${hotel.property.hotelName ?: "Selected Hotel"}") },
         text = {
             if (isDialogCurrentlyFetchingUrl) {
-                // If HotelsView initiated a fetch for this dialog instance
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                     CircularProgressIndicator()
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("Fetching booking link...")
                 }
             } else if (actualUrlDetailsResponse == null) {
-                // Fetch completed (isDialogCurrentlyFetchingUrl is false), but repo still has null
-                // This means the VM's getHotelDetails finished, and repo._url is still null (e.g. error in repo, or cleared)
                 Text("Booking details are not available. Please try again or check connection.")
             } else if (actualUrlDetailsResponse.status == true && !actualUrlDetailsResponse.data?.url.isNullOrBlank()) {
-                // Success and URL is present in the repo's state
                 Text("You will be redirected to an external site to complete your booking. Continue?")
             } else {
-                // API call for URL was made by VM, repo updated _url, but it reported an error or no URL
                 Text("Could not get booking link: ${actualUrlDetailsResponse.message ?: "Details unavailable."}\nPlease try again later.")
             }
         },
         confirmButton = {
             val bookingUrl = actualUrlDetailsResponse?.data?.url
-            // Enable confirm button only if NOT fetching LOCALLY AND we have a valid URL from a successful API call in repo
             if (!isDialogCurrentlyFetchingUrl && actualUrlDetailsResponse?.status == true && !bookingUrl.isNullOrBlank()) {
                 TextButton(onClick = { onConfirmOpenUrl(bookingUrl) }) {
                     Text("Yes, Continue")
@@ -269,7 +249,7 @@ fun HotelsList(
     navController: NavController,
     hotelViewModel: HotelsViewModel,
     hotels: List<Hotel>,
-    onHotelClick: (Hotel) -> Unit = {} // Callback for item clicks if needed
+    onHotelClick: (Hotel) -> Unit = {}
 ) {
     LazyColumn(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -278,15 +258,15 @@ fun HotelsList(
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 Button(onClick = {
-                    hotelViewModel.clearUrl() // Clear URL before navigating away
+                    hotelViewModel.clearUrl()
                     hotelViewModel.navigateToHome(navController)
                 }) { Text("Home") }
                 Button(onClick = {
-                    hotelViewModel.clearUrl() // Clear URL before navigating away
+                    hotelViewModel.clearUrl()
                     hotelViewModel.navigateToFlights(navController)
                 }) { Text("Flights") }
                 Button(onClick = {
-                    hotelViewModel.clearUrl() // Clear URL before navigating away
+                    hotelViewModel.clearUrl()
                     hotelViewModel.navigateToAttractions(navController)
                 }) { Text("Attractions") }
             }
@@ -315,7 +295,7 @@ fun HotelsList(
 @Composable
 fun HotelCard(
     hotel: Hotel,
-    onClick: () -> Unit = {} // Add callback if cards should be clickable later
+    onClick: () -> Unit = {}
 ) {
     val property = hotel.property
 
@@ -465,7 +445,6 @@ fun HotelCard(
 }
 
 
-// --- Helper function to format Check-in/out times ---
 private fun formatCheckInOutTime(fromTime: String?, untilTime: String?): String {
     val parts = mutableListOf<String>()
     if (!fromTime.isNullOrBlank()) parts.add("From $fromTime")
@@ -473,7 +452,6 @@ private fun formatCheckInOutTime(fromTime: String?, untilTime: String?): String 
     return parts.joinToString(" ")
 }
 
-// --- Helper function to format Hotel Price ---
 fun formatHotelPrice(grossPrice: GrossPrice?): String {
     if (grossPrice?.value == null || grossPrice.currency.isNullOrBlank()) {
         return "N/A"

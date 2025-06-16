@@ -5,10 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Attractions // Example icon for attraction
+import androidx.compose.material.icons.filled.Attractions
 import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material.icons.filled.Info // Reusing for description
-import androidx.compose.material.icons.filled.Star // Reusing for reviews
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,36 +22,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.relax.models.endpoints.Attraction // Your Attraction data class
-import com.example.relax.models.endpoints.RepresentativePrice // Your Price data class
+import com.example.relax.models.endpoints.Attraction
+import com.example.relax.models.endpoints.RepresentativePrice
 import com.example.relax.viewmodels.AttractionsViewModel
 import com.example.relax.viewmodels.HotelsViewModel
 import java.util.Locale
-
-// Assuming your ViewModel has a way to represent loading/error/success for the list
-// For simplicity, we'll infer from the attractions list being null or empty.
-// A dedicated StateFlow<AttractionListResultState> in VM would be more robust.
 
 @Composable
 fun AttractionsView(
     navController: NavController,
     attractionsViewModel: AttractionsViewModel
 ) {
-    // Collect the list of attractions from the ViewModel
-    // This directly observes repository.attractions via the ViewModel
     val attractionsList by attractionsViewModel.attractions.collectAsState()
-
-    // Optional: Add a loading state if your ViewModel exposes one for the initial fetch
-    // val isLoading by attractionsViewModel.isLoading.collectAsState()
-    // Optional: Add an error state
-    // val error by attractionsViewModel.errorMessage.collectAsState()
-
-    // Trigger initial fetch if not already done (ViewModel's init should handle this)
-    // LaunchedEffect(Unit) {
-    // if (attractionsList == null) { // Or check a specific loading state
-    // attractionsViewModel.getAttractions() // Assuming VM has this public fun
-    // }
-    // }
 
     Scaffold { paddingValues ->
         Surface(
@@ -60,16 +42,13 @@ fun AttractionsView(
                 .padding(paddingValues),
             color = MaterialTheme.colorScheme.background
         ) {
-            // Handle different states
-            // This logic assumes that if attractionsList is null, it's loading or an error occurred before data arrived.
-            // A more robust ViewModel would expose a sealed interface for ResultState (Idle, Loading, Success, Error).
             val errorFlag = attractionsViewModel.errorFlag.collectAsState().value
             val status = attractionsViewModel.status.collectAsState().value
             when {
                 errorFlag == true -> {
                     AttractionsErrorView(attractionsViewModel, navController)
                 }
-                attractionsList == null -> { // Assuming VM has a flag for fetch attempt
+                attractionsList == null -> {
                     LoadingIndicator()
                 }
                 status == false -> {
@@ -80,13 +59,11 @@ fun AttractionsView(
                 }
                 else -> {
                     AttractionsList(
-                        navController = navController, // For potential navigation buttons
-                        attractionsViewModel = attractionsViewModel, // For potential actions
-                        attractions = attractionsList!!, // Safe due to !isNullOrEmpty check
+                        navController = navController,
+                        attractionsViewModel = attractionsViewModel,
+                        attractions = attractionsList!!,
                         onAttractionClick = { attraction ->
                             Log.d("AttractionsView", "Clicked attraction: ${attraction.name}")
-                            // TODO: Handle attraction click (e.g., navigate to detail screen, show dialog for booking link)
-                            // For now, let's assume you'll add booking link dialog similar to HotelsView later
                         }
                     )
                 }
@@ -115,7 +92,7 @@ fun AttractionsErrorView(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Search Error", // Changed title slightly
+            text = "Search Error",
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.error
         )
@@ -125,7 +102,6 @@ fun AttractionsErrorView(
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center
         )
-        // Optional: Add a "Retry" button here if applicable
         Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = {
@@ -147,7 +123,6 @@ fun AttractionsList(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Optional: Navigation buttons to Home/Flights/Hotels if needed
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 Button(onClick = { attractionsViewModel.navigateToHome(navController) }) { Text("Home") }
@@ -165,7 +140,6 @@ fun AttractionsList(
 
         items(
             items = attractions,
-            // Use a stable key if Attraction has a unique ID, otherwise fallback to hashCode
             key = { attraction -> attraction.name ?: attraction.hashCode() }
         ) { attraction ->
             AttractionCard(
@@ -229,7 +203,7 @@ fun AttractionCard(
                     Icon(
                         imageVector = Icons.Filled.Info,
                         contentDescription = "Description",
-                        modifier = Modifier.size(16.dp).padding(end = 6.dp, top = 2.dp), // Adjust padding
+                        modifier = Modifier.size(16.dp).padding(end = 6.dp, top = 2.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
@@ -258,10 +232,9 @@ fun AttractionCard(
     }
 }
 
-// --- Helper function to format Attraction Price ---
 fun formatAttractionPrice(price: RepresentativePrice?): String {
     if (price?.chargeAmount == null || price.currency.isNullOrBlank()) {
-        return "Price N/A" // Or "Free" or "" depending on how you want to show no price
+        return "Price N/A"
     }
 
     val totalValue = price.chargeAmount.toDouble()
@@ -271,7 +244,6 @@ fun formatAttractionPrice(price: RepresentativePrice?): String {
         format.currency = java.util.Currency.getInstance(price.currency)
         format.format(totalValue)
     } catch (e: Exception) {
-        // Fallback for invalid currency code or locale issues
         "${price.currency} ${String.format(Locale.US, "%.2f", totalValue)}"
     }
 }

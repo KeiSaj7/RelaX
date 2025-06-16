@@ -37,7 +37,6 @@ class HomeViewModel @Inject constructor(
 
     fun getDestination(query: String, point: String){
         if (query.length < 2) {
-            // Clear suggestions if query is too short
             clearLocationSuggestions(point)
             return
         }

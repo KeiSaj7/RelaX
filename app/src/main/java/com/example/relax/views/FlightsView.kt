@@ -35,41 +35,30 @@ import androidx.core.net.toUri
 @Composable
 fun ResultView(
     navController: NavController,
-    flightsViewModel: FlightsViewModel, // Accept the shared ViewModel instance
-    // Callback for when a user selects a flight offer (to be handled by the caller, e.g., navigate)
-    onFlightOfferClick: (FlightOffer) -> Unit = {} // Default empty lambda is fine for now
+    flightsViewModel: FlightsViewModel,
+    onFlightOfferClick: (FlightOffer) -> Unit = {}
 ) {
-    // Collect the state from the passed-in ViewModel
     val responseState by flightsViewModel.flights.collectAsState()
 
-    // Use a local variable for smart casting within the 'when' block
     val currentResponse = responseState
 
-    // --- State for the confirmation dialog ---
     var showConfirmationDialog by remember { mutableStateOf(false) }
     var selectedOfferForBooking by remember { mutableStateOf<FlightOffer?>(null) }
-    val context = LocalContext.current // Get context for launching intent
+    val context = LocalContext.current
 
-    // --- Dialog Logic ---
     if (showConfirmationDialog && selectedOfferForBooking != null) {
         val offer = selectedOfferForBooking!! // Safe because of the check
-        val bookingUrl = "https://flights.booking.com/checkout/ticket-type/${offer.token}" // Your static link for now
-        // In a real app, bookingUrl might be:
-        // val bookingUrl = constructBookingUrl(offer.token, flightViewModel.routeArgs.pointOfSale) // Example
-        // or from offer.supplierInfo.bookingLink if available.
+        val bookingUrl = "https://flights.booking.com/checkout/ticket-type/${offer.token}"
 
         ConfirmationDialog(
-            offer = offer, // Pass the offer to display info if needed
+            offer = offer,
             onConfirm = {
                 showConfirmationDialog = false
                 selectedOfferForBooking = null
-                // Create an Intent to open the URL
                 val intent = Intent(Intent.ACTION_VIEW, bookingUrl.toUri())
                 try {
                     context.startActivity(intent)
                 } catch (e: Exception) {
-                    // Handle cases where no browser is available or URL is invalid
-                    // You might show a Snackbar or Toast here
                     println("Could not open URL: $bookingUrl. Error: ${e.message}")
                 }
             },
@@ -79,17 +68,14 @@ fun ResultView(
             }
         )
     }
-    // Scaffold provides basic Material layout structure (optional but good practice)
     Scaffold { paddingValues ->
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues), // Apply padding from Scaffold
+                .padding(paddingValues),
             color = MaterialTheme.colorScheme.background
         ) {
-            // Use 'when' to handle the different states of the response
             when {
-                // 1. Loading state
                 currentResponse == null -> {
                     LoadingIndicator()
                 }
@@ -102,7 +88,6 @@ fun ResultView(
                 }
 
                 else -> {
-                    // Pass the non-null list and the click handler to the list composable
                     FlightOffersList(
                         navController = navController,
                         flightViewModel = flightsViewModel,
@@ -118,7 +103,6 @@ fun ResultView(
     }
 }
 
-// --- Composables for different states ---
 
 @Composable
 fun LoadingIndicator() {
@@ -142,7 +126,7 @@ fun EmptyResultsView(message: String) {
             text = message,
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant // Softer color
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -167,7 +151,7 @@ fun FlightsErrorView(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Search Error", // Changed title slightly
+            text = "Search Error",
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.error
         )
@@ -177,7 +161,6 @@ fun FlightsErrorView(
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center
         )
-        // Optional: Add a "Retry" button here if applicable
         Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = {
@@ -186,24 +169,23 @@ fun FlightsErrorView(
         ) { Text("Retry") }
     }
 }
-// --- Composable for the list of flights ---
 
 @Composable
 fun FlightOffersList(
     navController: NavController,
     flightViewModel: FlightsViewModel,
     flightOffers: List<FlightOffer>,
-    onFlightOfferClick: (FlightOffer) -> Unit // Callback for item clicks
+    onFlightOfferClick: (FlightOffer) -> Unit
 ) {
 
     LazyColumn(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp) // Spacing between cards
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly // Space out buttons
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Button(onClick = { flightViewModel.navigateToHome(navController) }) { Text("Home") }
                 Button(onClick = { flightViewModel.navigateToHotels(navController) }) { Text("Hotels") }
@@ -213,10 +195,9 @@ fun FlightOffersList(
         }
         item { Text("Available Flights", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp)) }
 
-        items(items = flightOffers, key = { offer -> offer.token ?: offer.hashCode() }) { offer -> // Use a stable key if possible
+        items(items = flightOffers, key = { offer -> offer.token ?: offer.hashCode() }) { offer ->
             FlightOfferCard(
                 offer = offer,
-                // When this card is clicked, invoke the callback passed from ResultView
                 onClick = { onFlightOfferClick(offer) }
             )
         }
@@ -225,20 +206,16 @@ fun FlightOffersList(
 
 @Composable
 fun ConfirmationDialog(
-    offer: FlightOffer, // You can use this to display offer details in dialog if desired
+    offer: FlightOffer,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    // You can customize this dialog further.
-    // For a simple one:
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Redirect") },
         title = { Text("Confirm Booking") },
         text = {
             Text("You will be redirected to an external site to complete your booking for this flight. Continue?")
-            // Optionally, display some offer details here:
-            // Text("\nPrice: ${formatPrice(offer.priceBreakdown?.total)}")
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
@@ -253,28 +230,25 @@ fun ConfirmationDialog(
     )
 }
 
-// --- Composable for a single flight offer card ---
 
 @OptIn(ExperimentalMaterial3Api::class) // Required for Card onClick
 @Composable
 fun FlightOfferCard(
     offer: FlightOffer,
-    onClick: () -> Unit // Callback for when this specific card is clicked
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        onClick = onClick // Make the whole card clickable
+        onClick = onClick
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Row for Price and Stops/Type Info
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top, // Align tops for different text sizes
+                verticalAlignment = Alignment.Top,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Price - formatted and prominent
                 Text(
                     text = formatPrice(offer.priceBreakdown?.total),
                     style = MaterialTheme.typography.headlineSmall,
@@ -286,12 +260,9 @@ fun FlightOfferCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Display each segment (leg) of the flight
             offer.segments?.forEachIndexed { index, segment ->
                 SegmentView(segment = segment)
-                // Add a visual separator between segments if it's a multi-leg flight
                 if (index < (offer.segments.size - 1)) {
-                    // Simple dashed line separator (using text)
                     Text(
                         text = "--------- Connection ---------", // Or use a Divider
                         fontSize = 10.sp,
@@ -306,16 +277,13 @@ fun FlightOfferCard(
     }
 }
 
-// --- Composable for displaying a single flight segment ---
-
 @Composable
 fun SegmentView(segment: Segment) {
-    Row( // Use Row for better alignment control of segment details
+    Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Departure Info
-        Column(modifier = Modifier.weight(1f)) { // Takes up available space
+        Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
 
                 Icon(
@@ -332,20 +300,18 @@ fun SegmentView(segment: Segment) {
                 )
             }
             Text(
-                text = segment.departureTime!!,//formatDisplayDateTime(segment.departureTime),
-                style = MaterialTheme.typography.bodySmall, // Smaller font for time
+                text = segment.departureTime!!,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 20.dp) // Indent time under icon
+                modifier = Modifier.padding(start = 20.dp)
             )
         }
 
-        // --- Middle Section: Stops and Arrow ---
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 4.dp) // Add some horizontal padding
+            modifier = Modifier.padding(horizontal = 4.dp)
         ) {
-            // Calculate stops for THIS segment based on its legs
-            val stopsCount = (segment.legs?.size ?: 1) - 1 // 0 stops = 1 leg, 1 stop = 2 legs, etc.
+            val stopsCount = (segment.legs?.size ?: 1) - 1
             val stopsText = when {
                 stopsCount <= 0 -> "Direct"
                 stopsCount == 1 -> "1 Stop"
@@ -354,9 +320,9 @@ fun SegmentView(segment: Segment) {
 
             Text(
                 text = stopsText,
-                style = MaterialTheme.typography.labelMedium, // Use a smaller label style
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 2.dp) // Add space below stops text
+                modifier = Modifier.padding(bottom = 2.dp)
             )
 
             Icon(
@@ -367,10 +333,9 @@ fun SegmentView(segment: Segment) {
             )
         }
 
-        // Arrival Info
-        Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) { // Align text to the end
+        Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text( // Airport code first for alignment
+                Text(
                     text = segment.arrivalAirport?.code ?: "???",
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
@@ -389,7 +354,7 @@ fun SegmentView(segment: Segment) {
                 text = segment.arrivalTime!!,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(end = 20.dp), // Indent time under icon (from right)
+                modifier = Modifier.padding(end = 20.dp),
                 textAlign = TextAlign.End
             )
         }
@@ -397,30 +362,18 @@ fun SegmentView(segment: Segment) {
 }
 
 
-// --- Helper Functions ---
 
 fun formatPrice(priceInfo: PriceInfo?): String {
     if (priceInfo == null || priceInfo.currencyCode == null || priceInfo.units == null) {
-        return "N/A" // Not Available
+        return "N/A"
     }
-    // Combine units and nanos (assuming nanos are billionths of a unit)
     val totalValue = priceInfo.units + (priceInfo.nanos?.toDouble() ?: 0.0) / 1_000_000_000.0
 
-    // Use Java's NumberFormat for proper currency formatting based on locale
     return try {
         val format = java.text.NumberFormat.getCurrencyInstance(Locale.getDefault())
-        // Attempt to map currency code to Java Currency object
         format.currency = java.util.Currency.getInstance(priceInfo.currencyCode)
         format.format(totalValue)
     } catch (e: Exception) {
-        // Fallback if currency code is invalid or locale data missing
         "${priceInfo.currencyCode} ${String.format(Locale.US, "%.2f", totalValue)}"
     }
 }
-
-
-// Parser for the ISO_OFFSET_DATE_TIME format from your API ("2025-05-01T13:25:00")
-// IMPORTANT: Your example log shows "2025-05-01T13:25:00" which is MISSING the offset (+00:00 or Z)
-// If the API *always* returns times without offset, we need to handle that.
-// Assuming it *should* have an offset or is implicitly UTC. If not, parsing needs adjustment.
-// Let's try ISO_OFFSET_DATE_TIME first, but add a fallback for LOCAL_DATE_TIME.

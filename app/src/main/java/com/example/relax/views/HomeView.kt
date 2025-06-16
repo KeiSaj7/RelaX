@@ -32,7 +32,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class) // Needed for DropdownMenu, Scaffold, etc.
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StartScreen(
     navController: NavController,
@@ -52,39 +52,30 @@ fun StartScreen(
     var isStartDropdownVisible by remember { mutableStateOf(false) }
     var isDestDropdownVisible by remember { mutableStateOf(false) }
 
-    // Collect suggestions from ViewModel
     val startSuggestions by homeViewModel.startingLocation.collectAsState()
     val destinationSuggestions by homeViewModel.destination.collectAsState()
 
-    // Collect loading state for the final flight search (optional pattern)
     val isSearchingFlights by homeViewModel.isSearchingFlights.collectAsState()
 
-    // Helpers
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     val coroutineScope = rememberCoroutineScope()
-    var searchJob by remember { mutableStateOf<Job?>(null) } // Debounce job for API calls
-    val snackbarHostState = remember { SnackbarHostState() } // For showing messages
+    var searchJob by remember { mutableStateOf<Job?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    // --- Debounced Search Logic ---
     fun triggerSearch(query: String, point: String) {
-        searchJob?.cancel() // Cancel previous job
-        // Don't trigger API for very short queries, but still allow clearing selection
+        searchJob?.cancel()
         if (query.length < 2) {
             if (point == "start") isStartDropdownVisible = false else isDestDropdownVisible = false
-            // Clear suggestions in ViewModel if query becomes too short
-            // homeViewModel.clearLocationSuggestions(point)
             return
         }
         searchJob = coroutineScope.launch {
-            delay(1200) // Adjust debounce delay (milliseconds)
+            delay(1200)
             homeViewModel.getDestination(query, point)
-            // Show dropdown once search is triggered (will populate when state updates)
             if (point == "start") isStartDropdownVisible = true else isDestDropdownVisible = true
         }
     }
 
-    // Date Picker
     var selectedDepartureDateMillis by remember { mutableStateOf<Long?>(null) }
     val formattedSelectedDepartureDate = remember(selectedDepartureDateMillis){
         selectedDepartureDateMillis?.let { millis ->
@@ -104,13 +95,11 @@ fun StartScreen(
     var showDepartureCalendar by remember { mutableStateOf(false) }
     var showReturnCalendar by remember { mutableStateOf(false) }
 
-    // Adults
     var adults by remember {mutableIntStateOf(1)}
 
 
-    // --- UI ---
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) } // Host for validation/error messages
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Box(modifier = Modifier
             .fillMaxSize()
@@ -118,20 +107,17 @@ fun StartScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState()) // Make content scrollable
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp, vertical = 16.dp)
             ) {
-                // App Name
                 RenderAppName(appName)
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // --- Departure Input ---
                 Text("From", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 4.dp))
                 LocationInputWithDropdown(
                     query = startQuery,
                     onQueryChange = { newQuery ->
                         startQuery = newQuery
-                        // Clear selection if user modifies the query after selecting
                         if (selectedStartFlight?.name != newQuery && selectedStartFlight?.id != newQuery) {
                             selectedStartFlight = null
                         }
@@ -140,7 +126,7 @@ fun StartScreen(
                     selectedFlight = selectedStartFlight,
                     onFlightSelected = { flight ->
                         selectedStartFlight = flight
-                        startQuery = flight.name ?: flight.code ?: "" // Display selected name
+                        startQuery = flight.name ?: flight.code ?: ""
                         isStartDropdownVisible = false
                         focusManager.clearFocus()
                     },
@@ -153,7 +139,6 @@ fun StartScreen(
                 )
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // --- Swap Icon ---
                 Icon(
                     imageVector = Icons.Default.SwapVert,
                     contentDescription = "Swap locations",
@@ -176,7 +161,6 @@ fun StartScreen(
                 )
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // --- Arrival Input ---
                 Text("To", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 4.dp))
                 LocationInputWithDropdown(
                     query = destQuery,
@@ -190,7 +174,7 @@ fun StartScreen(
                     selectedFlight = selectedDestinationFlight,
                     onFlightSelected = { flight ->
                         selectedDestinationFlight = flight
-                        destQuery = flight.name ?: flight.code ?: "" // Display selected name
+                        destQuery = flight.name ?: flight.code ?: ""
                         isDestDropdownVisible = false
                         focusManager.clearFocus()
                     },
@@ -206,9 +190,8 @@ fun StartScreen(
                 Text("Dates", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 4.dp))
                 Row(
                     Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp) // Spacing between date fields
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ){
-                    // You'll need state for the selected dates
                     Box(modifier = Modifier
                         .weight(1f)
                         .clickable{
@@ -217,15 +200,15 @@ fun StartScreen(
                     ){
                         OutlinedTextField(
                             value = formattedSelectedDepartureDate.ifBlank { "Select Date" },
-                            onValueChange = {}, // Not editable directly
-                            readOnly = true, // User clicks to open picker
+                            onValueChange = {},
+                            readOnly = true,
                             label = { Text("Departure") },
                             leadingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Departure Date")},
                             enabled = false,
                             colors = OutlinedTextFieldDefaults.colors(
                                 disabledTextColor = LocalContentColor.current.copy(),
-                                disabledContainerColor = Color.Transparent, // Or MaterialTheme.colorScheme.surface
-                                disabledBorderColor = MaterialTheme.colorScheme.outline, // Standard border
+                                disabledContainerColor = Color.Transparent,
+                                disabledBorderColor = MaterialTheme.colorScheme.outline,
                                 disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -241,15 +224,15 @@ fun StartScreen(
                     ){
                         OutlinedTextField(
                             value = formattedSelectedReturnDate.ifBlank { "One way" },
-                            onValueChange = {}, // Not editable directly
-                            readOnly = true, // User clicks to open picker
+                            onValueChange = {},
+                            readOnly = true,
                             label = { Text("Return") },
                             leadingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Return Date")},
                             enabled = false,
                             colors = OutlinedTextFieldDefaults.colors(
                                 disabledTextColor = LocalContentColor.current.copy(),
-                                disabledContainerColor = Color.Transparent, // Or MaterialTheme.colorScheme.surface
-                                disabledBorderColor = MaterialTheme.colorScheme.outline, // Standard border
+                                disabledContainerColor = Color.Transparent,
+                                disabledBorderColor = MaterialTheme.colorScheme.outline,
                                 disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -267,7 +250,6 @@ fun StartScreen(
                 }
                 Spacer(modifier = Modifier.height(40.dp))
 
-                // --- Search Button ---
                 Button(
                     onClick = {
                         keyboardController?.hide()
@@ -278,7 +260,6 @@ fun StartScreen(
                         val returnDate = formattedSelectedReturnDate
 
                         if (startId != null && destId != null && departDate.isNotBlank()) {
-                            // Call ViewModel to fetch flights
                             homeViewModel.getFlights(
                                 fromId = startId,
                                 toId = destId,
@@ -286,7 +267,6 @@ fun StartScreen(
                                 returnDate = returnDate,
                                 adults = adults
                             )
-                            // Navigate to results screen (assuming non-suspend getFlights)
 
                             navController.navigate(
                                 FlightsRoute(
@@ -306,59 +286,54 @@ fun StartScreen(
                             }
                         }
                     },
-                    // Enable only when both locations are selected and not currently searching
                     enabled = selectedStartFlight != null && selectedDestinationFlight != null && !isSearchingFlights,
                     modifier = Modifier
-                        .fillMaxWidth(0.9f) // Adjust width as desired
-                        .height(50.dp) // Standard button height
+                        .fillMaxWidth(0.9f)
+                        .height(50.dp)
                         .align(Alignment.CenterHorizontally)
                 ) {
-                    // Show progress indicator inside button if searching (optional alternate loading style)
-                    // if (isSearchingFlights) { CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp) } else { Text("Search Flights", fontSize = 16.sp) }
                     Text("Search Flights", fontSize = 16.sp)
                 }
 
-                Spacer(Modifier.height(24.dp)) // Space at the bottom
+                Spacer(Modifier.height(24.dp))
 
-            } // End Column
+            }
 
-            // --- Loading Overlay (Optional pattern - shown over everything) ---
             if (isSearchingFlights) {
                 Surface(
-                    color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f), // Use theme scrim color
+                    color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f),
                     modifier = Modifier.fillMaxSize()
-                ) {} // Semi-transparent background
+                ) {}
                 CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center) // Centered spinner
+                    modifier = Modifier.align(Alignment.Center)
                 )
             }
             if(showDepartureCalendar){
                 DatePickerModal(
                     onDateSelected = { millis ->
-                        selectedDepartureDateMillis = millis // Update the state with the selected date
-                        showDepartureCalendar = false // Close dialog after selection
+                        selectedDepartureDateMillis = millis
+                        showDepartureCalendar = false
                     },
                     onDismiss = {
-                        showDepartureCalendar = false // Close dialog if dismissed
+                        showDepartureCalendar = false
                     }
                 )
             }
             if(showReturnCalendar){
                 DatePickerModal(
                     onDateSelected = { millis ->
-                        selectedReturnDateMillis = millis // Update the state with the selected date
-                        showReturnCalendar = false // Close dialog after selection
+                        selectedReturnDateMillis = millis
+                        showReturnCalendar = false
                     },
                     onDismiss = {
-                        showReturnCalendar = false // Close dialog if dismissed
+                        showReturnCalendar = false
                     }
                 )
             }
-        } // End Box
-    } // End Scaffold
+        }
+    }
 }
 
-// --- Reusable Composable for Location Input + Dropdown ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LocationInputWithDropdown(
@@ -380,55 +355,41 @@ fun LocationInputWithDropdown(
             modifier = Modifier
                 .fillMaxWidth()
                 .onFocusChanged { focusState ->
-                    // Hide dropdown if the field loses focus WITHOUT making a selection
-                    // (Selection handler already clears focus)
-                    // if (!focusState.isFocused && selectedFlight == null) { onDismissDropdown() }
-
-                    // Alternative: Show dropdown on focus if query is valid? Needs careful handling.
-                    // if (focusState.isFocused && query.length >= 2) { /* potentially trigger search or show existing */ }
                 },
             placeholder = { Text(placeholder) },
             singleLine = true,
             enabled = enabled,
             trailingIcon = {
                 when {
-                    // Show checkmark if selected
                     selectedFlight != null -> Icon(
                         Icons.Filled.CheckCircle,
                         "Selected",
-                        tint = MaterialTheme.colorScheme.primary // Use primary color for selected
+                        tint = MaterialTheme.colorScheme.primary
                     )
-                    // Show clear button only if NOT selected and query is not empty
                     query.isNotEmpty() -> IconButton(onClick = {
-                        onQueryChange("") // Clear the query text
-                        // If you also want to clear suggestions immediately:
-                        // onDismissDropdown()
-                        // homeViewModel.clearLocationSuggestions(...) // Needs ViewModel access or callback
+                        onQueryChange("")
                     }) {
                         Icon(Icons.Filled.Clear, "Clear text")
                     }
-                    else -> null // No icon otherwise
+                    else -> null
                 }
             },
-            colors = OutlinedTextFieldDefaults.colors( // Subtle visual cue when selected
-                focusedBorderColor = if (selectedFlight != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary, // Or a different color like Green
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = if (selectedFlight != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = if (selectedFlight != null) MaterialTheme.colorScheme.primary.copy(alpha=0.7f) else MaterialTheme.colorScheme.outline
             )
         )
 
-        // Suggestions Dropdown
         DropdownMenu(
-            expanded = isDropdownVisible && !suggestions.isNullOrEmpty() && selectedFlight == null, // Show if flag is true, have suggestions, and nothing is selected yet
-            onDismissRequest = onDismissDropdown, // Called when clicked outside or back button
+            expanded = isDropdownVisible && !suggestions.isNullOrEmpty() && selectedFlight == null,
+            onDismissRequest = onDismissDropdown,
             modifier = Modifier
-                .fillMaxWidth() // Match text field width
-                // Limit height to prevent overly long lists
+                .fillMaxWidth()
                 .heightIn(max = 300.dp)
         ) {
             suggestions?.forEach { flight ->
                 DropdownMenuItem(
                     text = {
-                        // Combine fields for a richer display (as discussed before)
                         val primaryText = flight.name ?: flight.code ?: "Unknown location"
                         val secondaryTextParts = mutableListOf<String>()
                         if (!flight.city.isNullOrBlank() && flight.city != flight.name) {
@@ -470,17 +431,15 @@ fun LocationInputWithDropdown(
                         }
                     },
                     onClick = {
-                        onFlightSelected(flight) // This updates state AND clears focus
-                        // onDismissDropdown() // Not needed here, focus clear hides it
+                        onFlightSelected(flight)
                     }
                 )
             }
-            // Handle empty suggestions state after search
             if(isDropdownVisible && suggestions?.isEmpty() == true && query.length >= 2) {
                 DropdownMenuItem(
                     text = { Text("No locations found", style = LocalTextStyle.current.copy(color = Color.Gray)) },
                     onClick = { onDismissDropdown() },
-                    enabled = false // Make it non-clickable
+                    enabled = false
                 )
             }
         }
@@ -535,66 +494,60 @@ fun NumberPicker(
             modifier = Modifier.padding(bottom = 4.dp)
         )
 
-        // Row contained within a border for the frame effect
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(IntrinsicSize.Min) // Ensures Row height fits content snugly
+                .height(IntrinsicSize.Min)
                 .border(
-                    BorderStroke(1.dp, MaterialTheme.colorScheme.outline), // Standard outline color
-                    shape = MaterialTheme.shapes.extraSmall // Match OutlinedTextField corner radius
+                    BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                    shape = MaterialTheme.shapes.extraSmall
                 )
-                .padding(horizontal = 4.dp), // Padding inside the border
+                .padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Decrease Button
             IconButton(
                 onClick = { if (count > minValue) onCountChange(count - 1) },
-                enabled = count > minValue // Disable if at minimum value
+                enabled = count > minValue
             ) {
                 Icon(
                     imageVector = Icons.Default.Remove,
-                    contentDescription = "Decrease $label", // Accessibility
+                    contentDescription = "Decrease $label",
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
 
-            // Divider for visual separation
             HorizontalDivider(
                 modifier = Modifier
-                    .height(24.dp) // Adjust height as needed
+                    .height(24.dp)
                     .width(1.dp)
-                    .padding(vertical = 8.dp), // Padding around divider
+                    .padding(vertical = 8.dp),
                 color = MaterialTheme.colorScheme.outline
             )
 
-            // Count Display - Takes up the central space
             Text(
                 text = count.toString(),
-                style = MaterialTheme.typography.bodyLarge, // Make number prominent
+                style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
-                    .weight(1f) // Fill available horizontal space
-                    .padding(vertical = 12.dp) // Vertical padding to ensure height matches IconButton touch area
+                    .weight(1f)
+                    .padding(vertical = 12.dp)
             )
 
-            // Divider for visual separation
             HorizontalDivider(
                 modifier = Modifier
-                    .height(24.dp) // Adjust height as needed
+                    .height(24.dp)
                     .width(1.dp)
-                    .padding(vertical = 8.dp), // Padding around divider
+                    .padding(vertical = 8.dp),
                 color = MaterialTheme.colorScheme.outline
             )
 
-            // Increase Button
             IconButton(
                 onClick = { if (count < maxValue) onCountChange(count + 1) },
-                enabled = count < maxValue // Disable if at maximum value
+                enabled = count < maxValue
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Increase $label", // Accessibility
+                    contentDescription = "Increase $label",
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
